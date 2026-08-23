@@ -1,0 +1,290 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "System user profile with role and status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "supervisor", "manager", "training_team_leader", "sales"] },
+        "isActive": { "type": "boolean" },
+        "lastLoginAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role", "isActive"]
+    },
+    "AllowedUser": {
+      "title": "Allowed User",
+      "description": "Whitelist of users allowed to sign up/in",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "supervisor", "manager", "training_team_leader", "sales"] },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["email", "role", "isActive"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer personal and contact information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "countryCode": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "fullWhatsapp": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["name", "phone", "whatsapp"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Booking record for a course, diploma, or workshop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "groupId": { "type": "string" },
+        "productId": { "type": "string" },
+        "productType": { "type": "string", "enum": ["course", "diploma", "workshop"] },
+        "bookingType": { "type": "string", "enum": ["assigned", "deferred"] },
+        "bookingDate": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["ACTIVE", "DEACTIVATED", "REFUNDED", "DELETED"] },
+        "salesId": { "type": "string" },
+        "salesName": { "type": "string" }
+      },
+      "required": ["customerId", "productId", "productType", "bookingType", "status"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Payment record for a booking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "bookingId": { "type": "string" },
+        "customerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "paymentDate": { "type": "string", "format": "date" },
+        "method": { "type": "string" },
+        "createdByUid": { "type": "string" },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["bookingId", "customerId", "amount", "paymentDate", "method", "createdByUid"]
+    },
+    "ActivityLog": {
+      "title": "Activity Log",
+      "description": "System-wide activity log",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "section": { "type": "string" },
+        "details": { "type": "string" }
+      },
+      "required": ["userId", "userName", "action", "timestamp", "section"]
+    },
+    "Complaint": {
+      "title": "Complaint",
+      "description": "Customer complaint or feedback record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "active", "closed"] },
+        "subject": { "type": "string" },
+        "details": { "type": "string" },
+        "assignedToId": { "type": "string" },
+        "assignedToName": { "type": "string" },
+        "parties": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdByUid": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "lastUpdateSentToWhatsapp": { "type": "boolean" },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "uid": { "type": "string" },
+              "name": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" },
+              "contactMethod": { "type": "string", "enum": ["whatsapp", "mobile", "other"] }
+            }
+          }
+        }
+      },
+      "required": ["customerId", "customerName", "subject", "details", "status", "createdAt"]
+    },
+    "PromoCode": {
+      "title": "Promo Code",
+      "description": "Promo code for booking discount",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "discountAmount": { "type": "number" },
+        "assignedToId": { "type": "string" },
+        "assignedToName": { "type": "string" },
+        "assignedToType": { "type": "string", "enum": ["trainer", "sales", "user", "other"] },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "reason": { "type": "string" },
+        "useCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdByUid": { "type": "string" },
+        "createdByName": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["code", "discountAmount", "assignedToId", "assignedToName", "assignedToType", "startDate", "endDate", "reason", "isActive"]
+    },
+    "PreRegisteredAccount": {
+      "title": "Pre-registered Account Pool",
+      "description": "Pre-registered free accounts waiting to be activated",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "typeId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "password": { "type": "string" },
+        "masterPassword": { "type": "string" },
+        "status": { "type": "string", "enum": ["free", "paid"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" }
+      },
+      "required": ["typeId", "email", "status"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles"
+    },
+    "allowed_users/{email}": {
+      "schema": "AllowedUser",
+      "description": "Whitelist of allowed users"
+    },
+    "customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer records"
+    },
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Booking records"
+    },
+    "payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Payment records"
+    },
+    "activity_logs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "Activity logs"
+    },
+    "booking_logs/{logId}": {
+      "schema": "ActivityLog",
+      "description": "Individual booking history logs"
+    },
+    "installment_plans/{bookingId}": {
+      "schema": "object",
+      "description": "Installment plans for bookings"
+    },
+    "groups/{groupId}": {
+      "schema": "object",
+      "description": "Course groups and schedules"
+    },
+    "catalog_courses/{courseId}": {
+      "schema": "object",
+      "description": "Available courses"
+    },
+    "catalog_diplomas/{diplomaId}": {
+      "schema": "object",
+      "description": "Available diplomas"
+    },
+    "catalog_workshops/{workshopId}": {
+      "schema": "object",
+      "description": "Available workshops (sub-products of courses; booking a workshop joins an existing group of its parent course)"
+    },
+    "branches/{branchId}": {
+      "schema": "object",
+      "description": "Academy branches"
+    },
+    "sales_staff/{staffId}": {
+      "schema": "object",
+      "description": "Sales staff records"
+    },
+    "refunds/{refundId}": {
+      "schema": "object",
+      "description": "Refund records"
+    },
+    "offers/{offerId}": {
+      "schema": "object",
+      "description": "Marketing offers"
+    },
+    "promo_codes/{codeId}": {
+      "schema": "PromoCode",
+      "description": "Promotional discount codes"
+    },
+    "settings/permissions": {
+      "schema": "object",
+      "description": "Global permissions and roles configuration"
+    },
+    "complaints/{complaintId}": {
+      "schema": "Complaint",
+      "description": "Customer complaints"
+    },
+    "customer_notes/{noteId}": {
+      "schema": "object",
+      "description": "General customer notes and updates"
+    },
+    "subscriptionTypes/{typeId}": {
+      "schema": "object",
+      "description": "Program subscription types definitions"
+    },
+    "paymentMethods/{methodId}": {
+      "schema": "object",
+      "description": "Payment cards/methods"
+    },
+    "subscriptionAccounts/{accountId}": {
+      "schema": "object",
+      "description": "Actual software accounts with license/passwords"
+    },
+    "customerSubscriptions/{subId}": {
+      "schema": "object",
+      "description": "Customer program subscription bindings"
+    },
+    "programSubscriptionExpenses/{expenseId}": {
+      "schema": "object",
+      "description": "Program account buy cost expenses"
+    },
+    "programSubscriptionRevenues/{revenueId}": {
+      "schema": "object",
+      "description": "Customer program subscription payment revenues"
+    },
+    "auditLogs/{logId}": {
+      "schema": "object",
+      "description": "Audit logs for program subscriptions and sensitive password actions"
+    },
+    "preRegisteredAccounts/{accountId}": {
+      "schema": "object",
+      "description": "Pre-registered accounts pool on sites (like Adobe)"
+    },
+    "subscriptionSettings/{settingId}": {
+      "schema": "object",
+      "description": "General settings for program subscriptions (e.g., tabsOrder)"
+    },
+    "subscriptionAlerts/{alertId}": {
+      "schema": "object",
+      "description": "Alerts and reminders for program subscription renewals"
+    }
+  }
+}

@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script>
+        // Guard to prevent "Cannot set property fetch of #<Window> which has only a getter"
+        (function() {
+            try {
+                var origFetch = window.fetch;
+                var currentFetch = origFetch;
+                Object.defineProperty(window, 'fetch', {
+                    get: function() { return currentFetch; },
+                    set: function(val) { currentFetch = val; },
+                    configurable: true,
+                    enumerable: true
+                });
+            } catch (e) {
+                console.warn('[FetchGuard] Failed to configure fetch wrapper:', e);
+            }
+        })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGCA - Saber Group Courses Academy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: 'rgb(var(--primary-50) / <alpha-value>)',
+                            100: 'rgb(var(--primary-100) / <alpha-value>)',
+                            200: 'rgb(var(--primary-200) / <alpha-value>)',
+                            300: 'rgb(var(--primary-300) / <alpha-value>)',
+                            400: 'rgb(var(--primary-400) / <alpha-value>)',
+                            500: 'rgb(var(--primary-500) / <alpha-value>)',
+                            600: 'rgb(var(--primary-600) / <alpha-value>)',
+                            700: 'rgb(var(--primary-700) / <alpha-value>)',
+                            800: 'rgb(var(--primary-800) / <alpha-value>)',
+                            900: 'rgb(var(--primary-900) / <alpha-value>)',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style id="theme-variables">
+      :root {
+        --primary-50: 240 249 255;
+        --primary-100: 224 242 254;
+        --primary-200: 186 230 253;
+        --primary-300: 125 211 252;
+        --primary-400: 56 189 248;
+        --primary-500: 14 165 233;
+        --primary-600: 2 132 199;
+        --primary-700: 3 105 161;
+        --primary-800: 7 89 133;
+        --primary-900: 12 74 110;
+      }
+
+      /* Transitions for smooth theme switching */
+      body, header, aside, div, input, select, button, table {
+        transition: background-color 0.25s ease, border-color 0.25s ease;
+      }
+
+      /* Top header bar accent in all themes */
+      header {
+        border-top: 3px solid rgb(var(--primary-500)) !important;
+      }
+      html:not(.dark) header {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        border-bottom-color: rgb(var(--primary-200) / 0.5) !important;
+      }
+
+      /* ========================================================
+         FULL SYSTEM COLOR THEMES OVERRIDES (Dark Mode Surfaces)
+         ======================================================== */
+
+      /* 1. NAVY BLUE THEME (كحلي نيلي أعماق المحيط - الافتراضي) */
+      html.dark[data-color-theme="navy"] body,
+      html.dark[data-color-theme="navy"] .dark\:bg-gray-900,
+      html.dark[data-color-theme="navy"] .dark\:bg-slate-900 {
+        background-color: #080f1e !important;
+      }
+      html.dark[data-color-theme="navy"] header,
+      html.dark[data-color-theme="navy"] aside,
+      html.dark[data-color-theme="navy"] .dark\:bg-gray-800,
+      html.dark[data-color-theme="navy"] .dark\:bg-slate-800,
+      html.dark[data-color-theme="navy"] [class*="bg-gray-800"] {
+        background-color: #0f1b33 !important;
+      }
+      html.dark[data-color-theme="navy"] .dark\:bg-gray-700,
+      html.dark[data-color-theme="navy"] .dark\:bg-slate-700,
+      html.dark[data-color-theme="navy"] [class*="bg-gray-700"] {
+        background-color: #1a2a4a !important;
+      }
+      html.dark[data-color-theme="navy"] .dark\:hover\:bg-gray-700:hover,
+      html.dark[data-color-theme="navy"] .dark\:hover\:bg-gray-800:hover {
+        background-color: #1c2e52 !important;
+      }
+      html.dark[data-color-theme="navy"] header,
+      html.dark[data-color-theme="navy"] aside,
+      html.dark[data-color-theme="navy"] .dark\:border-gray-700,
+      html.dark[data-color-theme="navy"] .dark\:border-gray-800,
+      html.dark[data-color-theme="navy"] .dark\:border-slate-800 {
+        border-color: #1e3156 !important;
+      }
+
+      /* 2. OCEAN BLUE THEME (أزرق محيطي كلاسيكي) */
+      html.dark[data-color-theme="ocean"] body,
+      html.dark[data-color-theme="ocean"] .dark\:bg-gray-900,
+      html.dark[data-color-theme="ocean"] .dark\:bg-slate-900 {
+        background-color: #0f172a !important;
+      }
+      html.dark[data-color-theme="ocean"] header,
+      html.dark[data-color-theme="ocean"] aside,
+      html.dark[data-color-theme="ocean"] .dark\:bg-gray-800,
+      html.dark[data-color-theme="ocean"] .dark\:bg-slate-800,
+      html.dark[data-color-theme="ocean"] [class*="bg-gray-800"] {
+        background-color: #1e293b !important;
+      }
+      html.dark[data-color-theme="ocean"] .dark\:bg-gray-700,
+      html.dark[data-color-theme="ocean"] .dark\:bg-slate-700,
+      html.dark[data-color-theme="ocean"] [class*="bg-gray-700"] {
+        background-color: #334155 !important;
+      }
+      html.dark[data-color-theme="ocean"] .dark\:hover\:bg-gray-700:hover,
+      html.dark[data-color-theme="ocean"] .dark\:hover\:bg-gray-800:hover {
+        background-color: #3b4f69 !important;
+      }
+      html.dark[data-color-theme="ocean"] header,
+      html.dark[data-color-theme="ocean"] aside,
+      html.dark[data-color-theme="ocean"] .dark\:border-gray-700,
+      html.dark[data-color-theme="ocean"] .dark\:border-gray-800,
+      html.dark[data-color-theme="ocean"] .dark\:border-slate-800 {
+        border-color: #334155 !important;
+      }
+
+      /* 3. CRIMSON ROSE / RED WINE THEME (عنابي أحمر ملكي) */
+      html.dark[data-color-theme="rose"] body,
+      html.dark[data-color-theme="rose"] .dark\:bg-gray-900,
+      html.dark[data-color-theme="rose"] .dark\:bg-slate-900 {
+        background-color: #12060a !important;
+      }
+      html.dark[data-color-theme="rose"] header,
+      html.dark[data-color-theme="rose"] aside,
+      html.dark[data-color-theme="rose"] .dark\:bg-gray-800,
+      html.dark[data-color-theme="rose"] .dark\:bg-slate-800,
+      html.dark[data-color-theme="rose"] [class*="bg-gray-800"] {
+        background-color: #210d15 !important;
+      }
+      html.dark[data-color-theme="rose"] .dark\:bg-gray-700,
+      html.dark[data-color-theme="rose"] .dark\:bg-slate-700,
+      html.dark[data-color-theme="rose"] [class*="bg-gray-700"] {
+        background-color: #331521 !important;
+      }
+      html.dark[data-color-theme="rose"] .dark\:hover\:bg-gray-700:hover,
+      html.dark[data-color-theme="rose"] .dark\:hover\:bg-gray-800:hover {
+        background-color: #3b1927 !important;
+      }
+      html.dark[data-color-theme="rose"] header,
+      html.dark[data-color-theme="rose"] aside,
+      html.dark[data-color-theme="rose"] .dark\:border-gray-700,
+      html.dark[data-color-theme="rose"] .dark\:border-gray-800,
+      html.dark[data-color-theme="rose"] .dark\:border-slate-800 {
+        border-color: #3d1b29 !important;
+      }
+
+      /* 4. ROYAL EMERALD THEME (زمردي فاخر - الأخضر الملكي) */
+      html.dark[data-color-theme="emerald"] body,
+      html.dark[data-color-theme="emerald"] .dark\:bg-gray-900,
+      html.dark[data-color-theme="emerald"] .dark\:bg-slate-900 {
+        background-color: #03140e !important;
+      }
+      html.dark[data-color-theme="emerald"] header,
+      html.dark[data-color-theme="emerald"] aside,
+      html.dark[data-color-theme="emerald"] .dark\:bg-gray-800,
+      html.dark[data-color-theme="emerald"] .dark\:bg-slate-800,
+      html.dark[data-color-theme="emerald"] [class*="bg-gray-800"] {
+        background-color: #0a241b !important;
+      }
+      html.dark[data-color-theme="emerald"] .dark\:bg-gray-700,
+      html.dark[data-color-theme="emerald"] .dark\:bg-slate-700,
+      html.dark[data-color-theme="emerald"] [class*="bg-gray-700"] {
+        background-color: #12382b !important;
+      }
+      html.dark[data-color-theme="emerald"] .dark\:hover\:bg-gray-700:hover,
+      html.dark[data-color-theme="emerald"] .dark\:hover\:bg-gray-800:hover {
+        background-color: #164233 !important;
+      }
+      html.dark[data-color-theme="emerald"] header,
+      html.dark[data-color-theme="emerald"] aside,
+      html.dark[data-color-theme="emerald"] .dark\:border-gray-700,
+      html.dark[data-color-theme="emerald"] .dark\:border-gray-800,
+      html.dark[data-color-theme="emerald"] .dark\:border-slate-800 {
+        border-color: #174737 !important;
+      }
+
+      /* 5. ROYAL VIOLET THEME (بنفسجي ليلي ملكي) */
+      html.dark[data-color-theme="violet"] body,
+      html.dark[data-color-theme="violet"] .dark\:bg-gray-900,
+      html.dark[data-color-theme="violet"] .dark\:bg-slate-900 {
+        background-color: #0a0618 !important;
+      }
+      html.dark[data-color-theme="violet"] header,
+      html.dark[data-color-theme="violet"] aside,
+      html.dark[data-color-theme="violet"] .dark\:bg-gray-800,
+      html.dark[data-color-theme="violet"] .dark\:bg-slate-800,
+      html.dark[data-color-theme="violet"] [class*="bg-gray-800"] {
+        background-color: #150d2c !important;
+      }
+      html.dark[data-color-theme="violet"] .dark\:bg-gray-700,
+      html.dark[data-color-theme="violet"] .dark\:bg-slate-700,
+      html.dark[data-color-theme="violet"] [class*="bg-gray-700"] {
+        background-color: #221644 !important;
+      }
+      html.dark[data-color-theme="violet"] .dark\:hover\:bg-gray-700:hover,
+      html.dark[data-color-theme="violet"] .dark\:hover\:bg-gray-800:hover {
+        background-color: #2a1b54 !important;
+      }
+      html.dark[data-color-theme="violet"] header,
+      html.dark[data-color-theme="violet"] aside,
+      html.dark[data-color-theme="violet"] .dark\:border-gray-700,
+      html.dark[data-color-theme="violet"] .dark\:border-gray-800,
+      html.dark[data-color-theme="violet"] .dark\:border-slate-800 {
+        border-color: #2d1d5a !important;
+      }
+
+      /* 6. GOLDEN AMBER THEME (عنبر غروبي) */
+      html.dark[data-color-theme="amber"] body,
+      html.dark[data-color-theme="amber"] .dark\:bg-gray-900,
+      html.dark[data-color-theme="amber"] .dark\:bg-slate-900 {
+        background-color: #120b03 !important;
+      }
+      html.dark[data-color-theme="amber"] header,
+      html.dark[data-color-theme="amber"] aside,
+      html.dark[data-color-theme="amber"] .dark\:bg-gray-800,
+      html.dark[data-color-theme="amber"] .dark\:bg-slate-800,
+      html.dark[data-color-theme="amber"] [class*="bg-gray-800"] {
+        background-color: #211408 !important;
+      }
+      html.dark[data-color-theme="amber"] .dark\:bg-gray-700,
+      html.dark[data-color-theme="amber"] .dark\:bg-slate-700,
+      html.dark[data-color-theme="amber"] [class*="bg-gray-700"] {
+        background-color: #33200e !important;
+      }
+      html.dark[data-color-theme="amber"] .dark\:hover\:bg-gray-700:hover,
+      html.dark[data-color-theme="amber"] .dark\:hover\:bg-gray-800:hover {
+        background-color: #3d2712 !important;
+      }
+      html.dark[data-color-theme="amber"] header,
+      html.dark[data-color-theme="amber"] aside,
+      html.dark[data-color-theme="amber"] .dark\:border-gray-700,
+      html.dark[data-color-theme="amber"] .dark\:border-gray-800,
+      html.dark[data-color-theme="amber"] .dark\:border-slate-800 {
+        border-color: #422a13 !important;
+      }
+
+      /* 7. CYBER TEAL THEME (تركواز سايبر) */
+      html.dark[data-color-theme="teal"] body,
+      html.dark[data-color-theme="teal"] .dark\:bg-gray-900,
+      html.dark[data-color-theme="teal"] .dark\:bg-slate-900 {
+        background-color: #031215 !important;
+      }
+      html.dark[data-color-theme="teal"] header,
+      html.dark[data-color-theme="teal"] aside,
+      html.dark[data-color-theme="teal"] .dark\:bg-gray-800,
+      html.dark[data-color-theme="teal"] .dark\:bg-slate-800,
+      html.dark[data-color-theme="teal"] [class*="bg-gray-800"] {
+        background-color: #092026 !important;
+      }
+      html.dark[data-color-theme="teal"] .dark\:bg-gray-700,
+      html.dark[data-color-theme="teal"] .dark\:bg-slate-700,
+      html.dark[data-color-theme="teal"] [class*="bg-gray-700"] {
+        background-color: #10323a !important;
+      }
+      html.dark[data-color-theme="teal"] .dark\:hover\:bg-gray-700:hover,
+      html.dark[data-color-theme="teal"] .dark\:hover\:bg-gray-800:hover {
+        background-color: #153f4a !important;
+      }
+      html.dark[data-color-theme="teal"] header,
+      html.dark[data-color-theme="teal"] aside,
+      html.dark[data-color-theme="teal"] .dark\:border-gray-700,
+      html.dark[data-color-theme="teal"] .dark\:border-gray-800,
+      html.dark[data-color-theme="teal"] .dark\:border-slate-800 {
+        border-color: #174854 !important;
+      }
+
+                /* 8. SABER EMBER THEME (جمر صابر - هوية AI Assistant) */
+                html.dark[data-color-theme="ember"] body,
+                html.dark[data-color-theme="ember"] .dark\:bg-gray-900,
+                html.dark[data-color-theme="ember"] .dark\:bg-slate-900 {
+                              background-color: #0a0a0a !important;
+                }
+                html.dark[data-color-theme="ember"] header,
+                html.dark[data-color-theme="ember"] aside,
+                html.dark[data-color-theme="ember"] .dark\:bg-gray-800,
+                html.dark[data-color-theme="ember"] .dark\:bg-slate-800,
+                html.dark[data-color-theme="ember"] [class*="bg-gray-800"] {
+                              background-color: #170d0b !important;
+                }
+                html.dark[data-color-theme="ember"] .dark\:bg-gray-700,
+                html.dark[data-color-theme="ember"] .dark\:bg-slate-700,
+                html.dark[data-color-theme="ember"] [class*="bg-gray-700"] {
+                              background-color: #24100d !important;
+                }
+                html.dark[data-color-theme="ember"] .dark\:hover\:bg-gray-700:hover,
+                html.dark[data-color-theme="ember"] .dark\:hover\:bg-gray-800:hover {
+                              background-color: #2d120e !important;
+                }
+                html.dark[data-color-theme="ember"] header,
+                html.dark[data-color-theme="ember"] aside,
+                html.dark[data-color-theme="ember"] .dark\:border-gray-700,
+                html.dark[data-color-theme="ember"] .dark\:border-gray-800,
+                html.dark[data-color-theme="ember"] .dark\:border-slate-800 {
+                              border-color: #37140f !important;
+                }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/",
+    "xlsx": "https://esm.sh/xlsx@0.18.5",
+    "jszip": "https://esm.sh/jszip@3.10.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

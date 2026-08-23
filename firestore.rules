@@ -1,0 +1,305 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (UID)
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string (required)
+    //   - role: string (required, admin|supervisor|manager|training_team_leader|sales)
+    //   - isActive: bool (required)
+    //   - lastLoginAt: timestamp
+    //   - createdAt: timestamp
+    //
+    // Collection: allowed_users
+    // Document ID: email (lowercase)
+    // Fields:
+    //   - email: string (required)
+    //   - name: string (required)
+    //   - role: string (required)
+    //   - isActive: bool (required)
+    //
+    // Collection: customers
+    // Document ID: customerId
+    // Fields:
+    //   - name: string (required)
+    //   - phone: string (required)
+    //   - whatsapp: string (required)
+    //   - isDeleted: bool
+    //
+    // Collection: bookings
+    // Document ID: bookingId
+    // Fields:
+    //   - customerId: string (required)
+    //   - productId: string (required)
+    //   - productType: string (required, course|diploma)
+    //   - status: string (required, ACTIVE|DEACTIVATED|REFUNDED|DELETED)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "saber.gd.fl@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isSupervisor() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'supervisor';
+    }
+
+    function isManager() {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+    }
+
+    function isPrivileged() {
+      return isAdmin() || isSupervisor() || isManager();
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() > 0 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['admin', 'supervisor', 'manager', 'training_team_leader', 'sales'] &&
+             data.isActive is bool;
+    }
+
+    function isValidCustomer(data) {
+      return data.name is string && data.name.size() > 0 &&
+             (!('whatsapp' in data) || data.whatsapp is string) &&
+             (!('phone' in data) || data.phone is string);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) || isAdmin()) &&
+                    (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /allowed_users/{email} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin() || isSupervisor();
+    }
+
+    match /customers/{customerId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidCustomer(request.resource.data);
+      allow update: if isAuthenticated() && isValidCustomer(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && hasRequiredFields(['customerId', 'productId', 'productType', 'status']);
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /installment_plans/{bookingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /refunds/{refundId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /activity_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+
+    match /booking_logs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
+    match /catalog_courses/{courseId} {
+      allow read: if true;
+      allow write: if isPrivileged();
+    }
+
+    match /catalog_diplomas/{diplomaId} {
+      allow read: if true;
+      allow write: if isPrivileged();
+    }
+
+    match /stats/{statId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /_connection_test_/{docId} {
+      allow read: if isAuthenticated();
+    }
+
+    match /offers/{offerId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
+    match /promo_codes/{codeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() || isSupervisor();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin() || isSupervisor();
+    }
+
+    match /branches/{branchId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
+    match /sales_staff/{staffId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+    function isValidComplaint(data) {
+      return data.customerId is string && data.subject is string;
+    }
+
+    match /complaints/{complaintId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidComplaint(request.resource.data);
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /customer_notes/{noteId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // ===============================================================
+    // Software Subscriptions (إدارة اشتراكات البرامج) Rules
+    // ===============================================================
+
+    match /subscriptionTypes/{typeId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
+    match /paymentMethods/{methodId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
+    match /subscriptionAccounts/{accountId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
+    match /preRegisteredAccounts/{accountId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
+    match /customerSubscriptions/{subId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /programSubscriptionExpenses/{expenseId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
+    match /programSubscriptionRevenues/{revenueId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin() || isSupervisor();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    match /subscriptionSettings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin() || isSupervisor();
+    }
+
+    match /subscriptionAlerts/{alertId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Booking confirmation portal forms & submissions
+    match /booking_forms/{formId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /booking_form_submissions/{subId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+  }
+}

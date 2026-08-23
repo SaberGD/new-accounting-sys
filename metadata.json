@@ -1,0 +1,5 @@
+{
+  "name": "SABER GROUP COURSES ACADEMY (SGCA)",
+  "description": "Internal Revenue & CRM system for Saber Group Courses Academy with Firestore integration, role-based access, and multi-language support.",
+  "requestFramePermissions": []
+}
