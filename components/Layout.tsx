@@ -20,6 +20,41 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const paletteRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
+  // Progressive Web App (PWA) Support
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showIOSHint, setShowIOSHint] = useState(false);
+  const [isIOSModalOpen, setIsIOSModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // iOS Safari Detection
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+    if (isIosDevice && !isStandalone) {
+      setShowIOSHint(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA Installation outcome: ${outcome}`);
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+
   useEffect(() => {
     setSidebarOpen(false);
     setPaletteOpen(false);
@@ -142,6 +177,51 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       )}
 
+      {/* iOS PWA Installation Guide Modal */}
+      {isIOSModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border dark:border-gray-700 p-6 animate-in zoom-in-95 duration-200 text-right" dir="rtl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-black text-sm dark:text-white flex items-center gap-2">
+                <i className="fab fa-apple text-xl text-red-600 dark:text-red-500"></i>
+                تثبيت سيستم الحسابات على آيفونك
+              </h3>
+              <button onClick={() => setIsIOSModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                <i className="fas fa-times text-gray-400"></i>
+              </button>
+            </div>
+            
+            <div className="space-y-4 text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+              <p className="font-semibold text-gray-800 dark:text-gray-100">
+                لإضافة السيستم كأيقونة على الشاشة الرئيسية لجهازك، اتبع الخطوات التالية في متصفح Safari:
+              </p>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/60 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">1</div>
+                <p>اضغط على زر المشاركة <i className="fas fa-share-square text-primary-600 text-lg mx-1"></i> في شريط Safari السفلي أو العلوي.</p>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/60 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">2</div>
+                <p>مرر القائمة لأسفل ثم اختر <strong className="text-gray-800 dark:text-white">إضافة إلى الشاشة الرئيسية (Add to Home Screen)</strong> <i className="far fa-plus-square text-lg text-primary-600 mx-1"></i>.</p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/60 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">3</div>
+                <p>اضغط على <strong className="text-gray-800 dark:text-white">إضافة (Add)</strong> في الزاوية العلوية اليمنى.</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setIsIOSModalOpen(false)}
+              className="mt-6 w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold text-xs rounded-2xl transition-all shadow-lg shadow-primary-500/20"
+            >
+              فهمت، شكراً لك
+            </button>
+          </div>
+        </div>
+      )}
+
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/60 z-[40] lg:hidden backdrop-blur-sm transition-opacity duration-300"
@@ -180,6 +260,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </nav>
 
           <div className="pt-6 border-t dark:border-gray-700 mt-6">
+            {/* PWA Install Button for Android / Chrome / Windows / Mac */}
+            {deferredPrompt && (
+              <button 
+                onClick={handleInstallClick}
+                className="flex items-center justify-center space-x-2 rtl:space-x-reverse w-full px-4 py-3 mb-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs shadow-md shadow-orange-500/20 transition-all transform hover:scale-[1.02] active:scale-[0.98] animate-pulse"
+              >
+                <i className="fas fa-mobile-screen-button text-base"></i>
+                <span>تثبيت سيستم الحسابات</span>
+              </button>
+            )}
+
+            {/* iOS Help Hint Button for Safari */}
+            {showIOSHint && (
+              <button 
+                onClick={() => setIsIOSModalOpen(true)}
+                className="flex items-center justify-center space-x-2 rtl:space-x-reverse w-full px-4 py-3 mb-3 rounded-xl bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400 font-bold text-xs border border-primary-200 dark:border-primary-800 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <i className="fab fa-apple text-base"></i>
+                <span>تثبيت على الآيفون</span>
+              </button>
+            )}
+
             <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-2xl mb-4">
               <div className="flex items-center space-x-3 rtl:space-x-reverse">
                 <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-primary-600 text-xs font-bold">

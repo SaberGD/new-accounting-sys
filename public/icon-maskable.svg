@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="emberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea580c" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+  </defs>
+  <!-- Full square background for maskable adaptive icons -->
+  <rect x="0" y="0" width="512" height="512" fill="url(#emberGrad)" />
+  <!-- Text SG safely in the center circle (safe-zone is 60%) -->
+  <text x="50%" y="50%" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="180" fill="#ffffff" text-anchor="middle" dominant-baseline="middle" letter-spacing="-5">SG</text>
+  <text x="50%" y="72%" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="32" fill="rgba(255,255,255,0.7)" text-anchor="middle" dominant-baseline="middle" letter-spacing="4">ACADEMY</text>
+</svg>
