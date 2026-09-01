@@ -111,6 +111,7 @@ const Bookings: React.FC = () => {
   const [salesFilter, setSalesFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'assigned' | 'deferred'>('all');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'paid'>('all');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'all' | 'deactivated'>('active');
   
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
@@ -474,6 +475,13 @@ const Bookings: React.FC = () => {
         }
       }
 
+      // statusFilter
+      if (statusFilter === 'active') {
+        constraints.push(where('status', '==', 'ACTIVE'));
+      } else if (statusFilter === 'deactivated') {
+        constraints.push(where('status', 'in', ['DEACTIVATED', 'REFUNDED']));
+      }
+
       // groupFilter
       if (groupFilter !== 'all') {
         constraints.push(where('groupId', '==', groupFilter));
@@ -564,7 +572,7 @@ const Bookings: React.FC = () => {
   useEffect(() => { 
     // Trigger initial fetch on filter changes
     fetchData(false); 
-  }, [salesFilter, typeFilter, groupFilter, dateFilter, waFilter, paymentFilter, debouncedSearch]); 
+  }, [salesFilter, typeFilter, groupFilter, dateFilter, waFilter, paymentFilter, debouncedSearch, statusFilter]);
 
   // Handle Quick Action from Dashboard
   useEffect(() => {
@@ -2069,6 +2077,41 @@ const Bookings: React.FC = () => {
           )}
         </div>
       </div>
+      <div className="mb-6 flex gap-3">
+        <button
+          onClick={() => setStatusFilter('active')}
+          className={`px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${
+            statusFilter === 'active'
+              ? 'bg-green-600 text-white shadow-lg shadow-green-500/20'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
+          <i className="fas fa-check-circle"></i>
+          Active Only
+        </button>
+        <button
+          onClick={() => setStatusFilter('all')}
+          className={`px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${
+            statusFilter === 'all'
+              ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
+          <i className="fas fa-users"></i>
+          All Clients
+        </button>
+        <button
+          onClick={() => setStatusFilter('deactivated')}
+          className={`px-6 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${
+            statusFilter === 'deactivated'
+              ? 'bg-red-600 text-white shadow-lg shadow-red-500/20'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+          }`}
+        >
+          <i className="fas fa-ban"></i>
+          Deactivated Only
+        </button>
+      </div>
       <div className="mb-6 flex flex-wrap gap-4 items-end bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="relative flex-1 min-w-[200px]">
           <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">Search Student / Group</label>
@@ -2181,7 +2224,7 @@ const Bookings: React.FC = () => {
           <input type="date" className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm" value={dateFilter.start} onChange={e => setDateFilter({...dateFilter, start: e.target.value})} />
         </div>
 
-        <button onClick={() => { setDateFilter({ start: '', end: '' }); setGroupFilter('all'); setGroupSearch(''); setTypeFilter('all'); setPaymentFilter('all'); setWaFilter('all'); setSalesFilter('all'); setSearchQuery(''); }} className="p-3 text-gray-400 hover:text-red-500 transition-colors">
+        <button onClick={() => { setDateFilter({ start: '', end: '' }); setGroupFilter('all'); setGroupSearch(''); setTypeFilter('all'); setPaymentFilter('all'); setWaFilter('all'); setSalesFilter('all'); setSearchQuery(''); setStatusFilter('active'); }} className="p-3 text-gray-400 hover:text-red-500 transition-colors">
           <i className="fas fa-times-circle"></i>
         </button>
       </div>
