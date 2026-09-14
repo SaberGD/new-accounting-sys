@@ -18,23 +18,18 @@ const Landing: React.FC = () => {
   return (
     <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0b0f19] text-slate-100' : 'bg-slate-50 text-slate-900'} font-sans relative selection:bg-primary-500 selection:text-white`}>
       
-      {/* Background Decorative Gradients */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] bg-gradient-to-b from-primary-600/15 via-indigo-600/10 to-transparent blur-3xl pointer-events-none -z-10"></div>
-      <div className="absolute top-1/3 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
-      <div className="absolute bottom-10 left-10 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
-
       {/* TOP NAVBAR */}
       <header className={`sticky top-0 z-50 backdrop-blur-xl transition-all duration-200 border-b ${theme === 'dark' ? 'bg-[#0b0f19]/80 border-slate-800/80' : 'bg-white/80 border-slate-200/80'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           
           {/* Logo & Brand */}
           <Link to="/" className="flex items-center gap-3.5 group">
-            <div className="w-11 h-11 bg-gradient-to-tr from-primary-600 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary-500/30 group-hover:scale-105 transition-transform duration-300">
+            <div className="w-11 h-11 bg-primary-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary-500/20 group-hover:scale-105 transition-transform duration-300">
               SG
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-lg md:text-xl tracking-tight bg-gradient-to-r from-slate-900 via-primary-700 to-indigo-900 dark:from-white dark:via-primary-300 dark:to-indigo-300 bg-clip-text text-transparent">
+                <span className="font-black text-lg md:text-xl tracking-tight text-slate-900 dark:text-white">
                   SABER GROUP
                 </span>
                 <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-black bg-primary-500/15 text-primary-600 dark:text-primary-300 border border-primary-500/20">
@@ -97,7 +92,7 @@ const Landing: React.FC = () => {
             {isLoggedIn ? (
               <button
                 onClick={() => navigate('/')}
-                className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2"
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-600/15 transition-all flex items-center gap-2"
               >
                 <i className="fas fa-gauge-high"></i>
                 <span>{isAr ? 'لوحة التحكم' : 'Go to Dashboard'}</span>
@@ -105,7 +100,7 @@ const Landing: React.FC = () => {
             ) : (
               <button
                 onClick={() => navigate('/login')}
-                className="px-5 py-2.5 bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600 hover:from-primary-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-primary-600/30 transition-all flex items-center gap-2 group"
+                className="px-5 py-2.5 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-primary-600/20 transition-all flex items-center gap-2 group"
               >
                 <i className="fas fa-right-to-bracket text-xs group-hover:translate-x-0.5 transition-transform"></i>
                 <span>{isAr ? 'تسجيل الدخول' : 'Sign In'}</span>
@@ -116,36 +111,36 @@ const Landing: React.FC = () => {
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative pt-12 pb-20 md:pt-20 md:pb-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
+      <section className="relative pt-10 pb-16 md:pt-16 md:pb-24 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-7">
           
           {/* Top Pill Announcement */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-black bg-gradient-to-r from-primary-500/10 via-indigo-500/10 to-purple-500/10 border border-primary-500/30 text-primary-600 dark:text-primary-300 shadow-sm animate-fade-in">
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-black bg-primary-500/10 border border-primary-500/25 text-primary-600 dark:text-primary-300 shadow-sm animate-fade-in">
             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
             <span>{isAr ? 'الإصدار المالي المطور v3.5 - نظام إدارة المبيعات والإيرادات القيادي' : 'Enterprise Accounting & Financial Suite v3.5 Live'}</span>
           </div>
 
           {/* Hero Main Headline */}
           <div className="max-w-4xl mx-auto space-y-4">
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15]">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.18]">
               {isAr ? (
                 <>
                   النظام المحاسبي والمالي الموحد{' '}
-                  <span className="bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                  <span className="text-primary-500 dark:text-primary-300">
                     لمجموعة صابر SGCA
                   </span>
                 </>
               ) : (
                 <>
                   SABER GROUP Unified Enterprise{' '}
-                  <span className="bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                  <span className="text-primary-500 dark:text-primary-300">
                     Financial Engine
                   </span>
                 </>
               )}
             </h1>
 
-            <p className="text-base sm:text-lg md:text-xl font-semibold text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg font-semibold text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
               {isAr ? (
                 'منظومة سحابية متكاملة للتحكم الشامل بالإيرادات والمقبوضات، متابعة تحصيل الأقساط، إدارة الحجوزات والدبلومات، والاستعلام الذكي الفوري بأعلى مستويات الدقة والأمان.'
               ) : (
@@ -158,7 +153,7 @@ const Landing: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <button
               onClick={() => navigate('/login')}
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600 hover:from-primary-500 hover:to-purple-500 text-white rounded-2xl font-black text-sm md:text-base shadow-2xl shadow-primary-600/40 hover:shadow-primary-600/60 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 group"
+              className="w-full sm:w-auto px-8 py-4 bg-primary-600 hover:bg-primary-500 text-white rounded-2xl font-black text-sm md:text-base shadow-xl shadow-primary-600/20 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 group"
             >
               <span>{isAr ? 'الدخول إلى النظام المالي' : 'Launch System Login'}</span>
               <i className={`fas ${isAr ? 'fa-arrow-left' : 'fa-arrow-right'} text-sm group-hover:translate-x-1 transition-transform`}></i>

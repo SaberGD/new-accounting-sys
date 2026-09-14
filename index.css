@@ -30,17 +30,13 @@ html.dark {
 }
 
 body {
-  background:
-    radial-gradient(circle at 15% -10%, rgba(var(--primary-500), 0.12), transparent 30rem),
-    var(--sg-bg);
+  background: var(--sg-bg);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 html.dark body {
-  background:
-    radial-gradient(circle at 15% -10%, rgba(var(--primary-500), 0.18), transparent 32rem),
-    var(--sg-bg-dark);
+  background: var(--sg-bg-dark);
 }
 
 button,
