@@ -649,8 +649,8 @@ export function AccountsTab({
             onChange={e => setFilterPaymentType(e.target.value as 'all' | 'paid' | 'trial')}
           >
             <option value="all">{lang === 'ar' ? 'نوع الحساب (الكل)' : 'All Payment Types'}</option>
-            <option value="paid">{lang === 'ar' ? '💳 حسابات مدفوعة (Paid)' : 'Paid Accounts'}</option>
-            <option value="trial">{lang === 'ar' ? '🎁 تجريبي / فترات تجريبية (Trial Period)' : 'Trial Period'}</option>
+            <option value="paid">{lang === 'ar' ? 'حسابات مدفوعة (Paid)' : 'Paid Accounts'}</option>
+            <option value="trial">{lang === 'ar' ? 'تجريبي / فترات تجريبية (Trial Period)' : 'Trial Period'}</option>
           </select>
 
           <select
@@ -660,7 +660,7 @@ export function AccountsTab({
           >
             <option value="all">{lang === 'ar' ? 'كل الحالات' : 'All Statuses'}</option>
             <option value="active">{lang === 'ar' ? 'نشط (Active)' : 'Active'}</option>
-            <option value="reserved">{lang === 'ar' ? '🔒 محجوز للاستخدام الداخلي (Reserved)' : '🔒 Reserved'}</option>
+            <option value="reserved">{lang === 'ar' ? 'محجوز للاستخدام الداخلي (Reserved)' : 'Reserved'}</option>
             <option value="restricted">{lang === 'ar' ? 'محظور / مقيد (Restricted)' : 'Restricted'}</option>
             <option value="suspended">{lang === 'ar' ? 'موقوف (Suspended)' : 'Suspended'}</option>
             <option value="expired">{lang === 'ar' ? 'منتهي (Expired)' : 'Expired'}</option>
@@ -677,7 +677,7 @@ export function AccountsTab({
             </div>
             <div>
               <h4 className="text-xs font-black text-rose-900 dark:text-rose-200">
-                {lang === 'ar' ? '⚠️ تنبيه: يوجد حسابات ترخيص مقيدة (Restricted)' : '⚠️ Warning: Some licensing accounts are restricted'}
+                {lang === 'ar' ? 'تنبيه: يوجد حسابات ترخيص مقيدة (Restricted)' : 'Warning: Some licensing accounts are restricted'}
               </h4>
               <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5">
                 {lang === 'ar' ? 'يمكنك تحويل العملاء المسكنين عليها فوراً إلى حسابات نشطة أخرى متاحة.' : 'You can reassign their active customer seats to other available accounts now.'}
@@ -1276,7 +1276,7 @@ export function AccountsTab({
               <div className="p-4 bg-blue-50/50 dark:bg-blue-950/20 rounded-2xl border border-blue-100/40 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-300 space-y-2">
                 <div className="font-extrabold flex items-center gap-1.5">
                   <i className="fas fa-calculator text-blue-500 animate-pulse"></i>
-                  <span>{lang === 'ar' ? '📊 تفاصيل الرسوم والضرائب التلقائية:' : '📊 Automatic Fees & Taxes Breakdown:'}</span>
+                  <span>{lang === 'ar' ? 'تفاصيل الرسوم والضرائب التلقائية:' : 'Automatic Fees & Taxes Breakdown:'}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-y-1 text-[11px] font-bold">
                   <span>{lang === 'ar' ? 'السعر الأساسي المدخل:' : 'Base Renewal Price Entered:'}</span>
@@ -1335,7 +1335,7 @@ export function AccountsTab({
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
                     <i className="fas fa-gift text-purple-600 animate-bounce"></i>
-                    <span>{lang === 'ar' ? '🎁 نوع الحساب: فترة تجريبية أم اشتراك مباشر؟' : '🎁 Account Type: Trial or Direct Paid?'}</span>
+                    <span>{lang === 'ar' ? 'نوع الحساب: فترة تجريبية أم اشتراك مباشر؟' : 'Account Type: Trial or Direct Paid?'}</span>
                   </label>
                   {hasTrial && (
                     <span className="text-[10px] font-black text-purple-600 bg-purple-100 dark:bg-purple-900/50 px-2 py-0.5 rounded-full">
@@ -1399,7 +1399,7 @@ export function AccountsTab({
                 ) : (
                   <div className="p-3 bg-white/90 dark:bg-gray-900/90 rounded-xl text-[11px] space-y-2 border border-gray-200 dark:border-gray-700">
                     <label className="text-[11px] font-black text-gray-800 dark:text-gray-200 block">
-                      {lang === 'ar' ? '💳 حالة التحصيل والدفع المباشر للموقع:' : '💳 Account Payment Status:'}
+                      {lang === 'ar' ? 'حالة التحصيل والدفع المباشر للموقع:' : 'Account Payment Status:'}
                     </label>
                     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                       <label className="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer">

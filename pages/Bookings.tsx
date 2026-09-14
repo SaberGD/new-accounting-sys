@@ -2143,9 +2143,9 @@ const Bookings: React.FC = () => {
           <label className="block text-[10px] font-black text-gray-400 mb-2 uppercase tracking-widest">WA Status</label>
           <select className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-bold" value={waFilter} onChange={e => setWaFilter(e.target.value as any)}>
             <option value="all">All WA</option>
-            <option value="added">Added ✅</option>
-            <option value="pending">Pending ⏳</option>
-            <option value="not_eligible">Not Eligible ❌</option>
+            <option value="added">Added</option>
+            <option value="pending">Pending</option>
+            <option value="not_eligible">Not Eligible</option>
           </select>
         </div>
 
@@ -2162,7 +2162,7 @@ const Bookings: React.FC = () => {
             <select className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-bold" value={groupFilter} onChange={e => setGroupFilter(e.target.value)}>
               <option value="all">All Groups</option>
               {sortedGroupsForFilter.started.length > 0 && (
-                <optgroup label="🟡 STARTED">
+                <optgroup label="STARTED">
                   {sortedGroupsForFilter.started.map(g => {
                     const count = groupOccupancy[g.id] || 0;
                     return (
@@ -2174,7 +2174,7 @@ const Bookings: React.FC = () => {
                 </optgroup>
               )}
               {sortedGroupsForFilter.upcoming.length > 0 && (
-                <optgroup label="🟢 UPCOMING">
+                <optgroup label="UPCOMING">
                   {sortedGroupsForFilter.upcoming.map(g => {
                     const count = groupOccupancy[g.id] || 0;
                     return (
@@ -2186,7 +2186,7 @@ const Bookings: React.FC = () => {
                 </optgroup>
               )}
               {sortedGroupsForFilter.finished.length > 0 && (
-                <optgroup label="🔴 FINISHED">
+                <optgroup label="FINISHED">
                   {sortedGroupsForFilter.finished.map(g => {
                     const count = groupOccupancy[g.id] || 0;
                     return (
@@ -2415,8 +2415,8 @@ const Bookings: React.FC = () => {
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 border-b pb-2">1. Customer</h3>
                 <input type="text" placeholder="Full Name *" required className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-bold" value={customerData.name} onChange={e => setCustomerData({...customerData, name: e.target.value})} />
                 <div className="grid grid-cols-2 gap-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
-                    <button type="button" onClick={() => setCustomerData({...customerData, nationality: 'egyptian', countryCode: '+20'})} className={`py-2 text-[10px] font-black uppercase rounded-lg transition-all ${customerData.nationality === 'egyptian' ? 'bg-primary-600 text-white shadow-md' : 'text-gray-400'}`}>Egyptian 🇪🇬</button>
-                    <button type="button" onClick={() => setCustomerData({...customerData, nationality: 'other'})} className={`py-2 text-[10px] font-black uppercase rounded-lg transition-all ${customerData.nationality === 'other' ? 'bg-primary-600 text-white shadow-md' : 'text-gray-400'}`}>Other 🌏</button>
+                    <button type="button" onClick={() => setCustomerData({...customerData, nationality: 'egyptian', countryCode: '+20'})} className={`py-2 text-[10px] font-black uppercase rounded-lg transition-all ${customerData.nationality === 'egyptian' ? 'bg-primary-600 text-white shadow-md' : 'text-gray-400'}`}>Egyptian</button>
+                    <button type="button" onClick={() => setCustomerData({...customerData, nationality: 'other'})} className={`py-2 text-[10px] font-black uppercase rounded-lg transition-all ${customerData.nationality === 'other' ? 'bg-primary-600 text-white shadow-md' : 'text-gray-400'}`}>Other</button>
                 </div>
                 {customerData.nationality === 'other' && (
                     <div className="space-y-2">
@@ -2433,7 +2433,7 @@ const Bookings: React.FC = () => {
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 border-b pb-2">2. Product & Sales</h3>
                 <select required className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-bold" value={selectedProductId} onChange={e => { const pId = e.target.value; setSelectedProductId(pId); setSelectedGroupId(''); if (isInternational) { updateForeignPricesForProduct(pId, internationalCurrency); } }}><option value="">Select Course/Diploma</option>{[...courses, ...diplomas].map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-2xl"><label className="flex items-center space-x-3 cursor-pointer"><input type="checkbox" checked={isDeferred} onChange={e => setIsDeferred(e.target.checked)} className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500" /><span className="text-xs font-black text-amber-600 uppercase">Deferred (Unassigned Group)</span></label></div>
-                {!isDeferred && (<div className="space-y-2"><select required={!isDeferred} className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-bold" value={selectedGroupId} onChange={e => setSelectedGroupId(e.target.value)}><option value="">Select Group</option>{groups.filter(g => g.productId === selectedProductId && g.status !== 'FINISHED').map(g => { const count = groupOccupancy[g.id] || 0; const statusIcon = g.status === 'UPCOMING' ? '🟢' : '🟡'; const statusText = g.status === 'UPCOMING' ? 'Upcoming' : 'Started'; return <option key={g.id} value={g.id} className={g.status === 'UPCOMING' ? 'text-green-600' : 'text-amber-600'}>{statusIcon} {statusText} | {g.groupCode || g.productName} | {g.startDate} | {g.scheduleLabel} ({count}/{g.capacity})</option>; })}</select>{selectedGroupId && <div className="flex justify-between items-center px-2"><span className="text-[10px] font-black uppercase text-gray-400">Occupancy:</span><span className={`text-xs font-bold ${(groupOccupancy[selectedGroupId] || 0) >= (groups.find(g => g.id === selectedGroupId)?.capacity || 0) ? 'text-red-500' : 'text-primary-600'}`}>{groupOccupancy[selectedGroupId] || 0} / {groups.find(g => g.id === selectedGroupId)?.capacity} Trainees</span></div>}</div>)}
+                {!isDeferred && (<div className="space-y-2"><select required={!isDeferred} className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-bold" value={selectedGroupId} onChange={e => setSelectedGroupId(e.target.value)}><option value="">Select Group</option>{groups.filter(g => g.productId === selectedProductId && g.status !== 'FINISHED').map(g => { const count = groupOccupancy[g.id] || 0; const statusText = g.status === 'UPCOMING' ? 'Upcoming' : 'Started'; return <option key={g.id} value={g.id} className={g.status === 'UPCOMING' ? 'text-green-600' : 'text-amber-600'}>{statusText} | {g.groupCode || g.productName} | {g.startDate} | {g.scheduleLabel} ({count}/{g.capacity})</option>; })}</select>{selectedGroupId && <div className="flex justify-between items-center px-2"><span className="text-[10px] font-black uppercase text-gray-400">Occupancy:</span><span className={`text-xs font-bold ${(groupOccupancy[selectedGroupId] || 0) >= (groups.find(g => g.id === selectedGroupId)?.capacity || 0) ? 'text-red-500' : 'text-primary-600'}`}>{groupOccupancy[selectedGroupId] || 0} / {groups.find(g => g.id === selectedGroupId)?.capacity} Trainees</span></div>}</div>)}
                 <select required className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-bold" value={selectedSalesId} onChange={e => setSelectedSalesId(e.target.value)}><option value="">Sales Representative</option>{salesStaff.filter(s => s.isActive).map(s => <option key={s.id} value={s.id}>{s.fullName}</option>)}</select>
                 <input type="date" required className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-bold" value={bookingDate} onChange={e => setBookingDate(e.target.value)} />
               </div>
@@ -2448,7 +2448,7 @@ const Bookings: React.FC = () => {
                           <span>تسعير الحجز الدولي</span>
                         </div>
                         <p className="text-xs text-blue-100 leading-relaxed font-semibold">
-                          🌐 الحجز بالعملة الأجنبية مفصول تماماً عن سعر الجنيه المصري. يتم تحديد السعر والعرض والخصومات بالعملة الأجنبية بالأسفل.
+                          الحجز بالعملة الأجنبية مفصول تماماً عن سعر الجنيه المصري. يتم تحديد السعر والعرض والخصومات بالعملة الأجنبية بالأسفل.
                         </p>
                       </div>
                     ) : (
@@ -2554,7 +2554,7 @@ const Bookings: React.FC = () => {
                         />
                         <div>
                           <span className="text-xs font-black text-blue-700 dark:text-blue-300 block">
-                            🌐 تحويل من خارج مصر (حجز دولي)
+                            تحويل من خارج مصر (حجز دولي)
                           </span>
                           <span className="text-[10px] text-gray-500 block">
                             دفع بالدولار / العملات الأجنبية وتحديد عمولة تحويل والضرائب
@@ -2793,10 +2793,10 @@ const Bookings: React.FC = () => {
                             <span>نظام السداد للحجز الدولي (خارج مصر)</span>
                           </div>
                           <p className="text-xs font-bold text-gray-800 dark:text-gray-200 leading-relaxed">
-                            🚫 لا تتوفر أنظمة تقسيط للحجوزات الخارجية بالعملة الأجنبية.
+                            لا تتوفر أنظمة تقسيط للحجوزات الخارجية بالعملة الأجنبية.
                           </p>
                           <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 leading-relaxed">
-                            📌 يلزم دفع كامل المبلغ أو الجزء المتاح الآن، مع التزام الطالب باستكمال باقي المبلغ قبل بداية الكورس بـ 3 أيام كحد أقصى.
+                            يلزم دفع كامل المبلغ أو الجزء المتاح الآن، مع التزام الطالب باستكمال باقي المبلغ قبل بداية الكورس بـ 3 أيام كحد أقصى.
                           </p>
                         </div>
                       ) : (
@@ -3271,7 +3271,7 @@ const Bookings: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-sm dark:text-white">{sub.customerName}</span>
                           <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 px-2 py-0.5 rounded-full font-black">
-                            {sub.attendanceMethod === 'online' ? '🌐 أونلاين' : '🏛️ بالمقر'}
+                            {sub.attendanceMethod === 'online' ? 'أونلاين' : 'بالمقر'}
                           </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 font-semibold">

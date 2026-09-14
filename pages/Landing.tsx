@@ -122,7 +122,7 @@ const Landing: React.FC = () => {
           {/* Top Pill Announcement */}
           <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-xs font-black bg-gradient-to-r from-primary-500/10 via-indigo-500/10 to-purple-500/10 border border-primary-500/30 text-primary-600 dark:text-primary-300 shadow-sm animate-fade-in">
             <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
-            <span>{isAr ? '✨ الإصدار المالي المطور v3.5 - نظام إدارة المبيعات والإيرادات القيادي' : '✨ Enterprise Accounting & Financial Suite v3.5 Live'}</span>
+            <span>{isAr ? 'الإصدار المالي المطور v3.5 - نظام إدارة المبيعات والإيرادات القيادي' : 'Enterprise Accounting & Financial Suite v3.5 Live'}</span>
           </div>
 
           {/* Hero Main Headline */}
@@ -300,7 +300,7 @@ const Landing: React.FC = () => {
                         نسبة تحصيل الأقساط
                       </span>
                       <p className="text-2xl font-black text-emerald-600 dark:text-emerald-300">98.4%</p>
-                      <span className="text-[10px] text-emerald-500 font-bold">✅ معدل تحصيل ممتاز</span>
+                      <span className="text-[10px] text-emerald-500 font-bold">معدل تحصيل ممتاز</span>
                     </div>
 
                     <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
@@ -308,7 +308,7 @@ const Landing: React.FC = () => {
                         الحجوزات والمجموعات النشطة
                       </span>
                       <p className="text-2xl font-black text-purple-600 dark:text-purple-300">482 حجز / 38 مجموعة</p>
-                      <span className="text-[10px] text-purple-400 font-bold">📚 ممتدة على 4 فروع</span>
+                      <span className="text-[10px] text-purple-400 font-bold">ممتدة على 4 فروع</span>
                     </div>
 
                     <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
@@ -316,7 +316,7 @@ const Landing: React.FC = () => {
                         المقبوضات اليومية النقدية
                       </span>
                       <p className="text-2xl font-black text-amber-600 dark:text-amber-300">42,500 ج.م</p>
-                      <span className="text-[10px] text-amber-400 font-bold">⚡ مطابقة تلقائية للخزينة</span>
+                      <span className="text-[10px] text-amber-400 font-bold">مطابقة تلقائية للخزينة</span>
                     </div>
                   </div>
 

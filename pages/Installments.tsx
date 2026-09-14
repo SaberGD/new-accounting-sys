@@ -825,7 +825,7 @@ const Installments: React.FC = () => {
         <div className="flex items-center gap-2 mb-4">
           <div className="w-2.5 h-6 bg-primary-500 rounded-full"></div>
           <h2 className="text-lg font-black dark:text-white">
-            {lang === 'ar' ? '📊 ملخص الأقساط ومتابعة السيلز' : '📊 Sales Installments Performance Summary'}
+            {lang === 'ar' ? 'ملخص الأقساط ومتابعة السيلز' : 'Sales Installments Performance Summary'}
           </h2>
         </div>
         

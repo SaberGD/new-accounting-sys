@@ -1028,8 +1028,8 @@ Thank you for choosing us!`;
               <option value="04">{lang === 'ar' ? 'أبريل (4)' : 'April (4)'}</option>
               <option value="05">{lang === 'ar' ? 'مايو (5)' : 'May (5)'}</option>
               <option value="06">{lang === 'ar' ? 'يونيو (6)' : 'June (6)'}</option>
-              <option value="07">{lang === 'ar' ? 'يوليو (7) 🍉' : 'July (7) 🍉'}</option>
-              <option value="08">{lang === 'ar' ? 'أغسطس (8) ☀️' : 'August (8) ☀️'}</option>
+              <option value="07">{lang === 'ar' ? 'يوليو (7)' : 'July (7)'}</option>
+              <option value="08">{lang === 'ar' ? 'أغسطس (8)' : 'August (8)'}</option>
               <option value="09">{lang === 'ar' ? 'سبتمبر (9)' : 'September (9)'}</option>
               <option value="10">{lang === 'ar' ? 'أكتوبر (10)' : 'October (10)'}</option>
               <option value="11">{lang === 'ar' ? 'نوفمبر (11)' : 'November (11)'}</option>
@@ -1047,9 +1047,9 @@ Thank you for choosing us!`;
             >
               <option value="all">{lang === 'ar' ? 'كل الحالات' : 'All Statuses'}</option>
               <option value="active">{lang === 'ar' ? 'نشط (Active)' : 'Active'}</option>
-              <option value="paid">{lang === 'ar' ? '💳 مدفوع فقط (Paid)' : 'Paid Only'}</option>
-              <option value="temporary">{lang === 'ar' ? '🎁 تجريبي / تعويضي / مجاني' : 'Trial / Compensation'}</option>
-              <option value="restricted">{lang === 'ar' ? '⚠️ حسابات مقيدة (Restricted)' : 'Restricted Accounts'}</option>
+              <option value="paid">{lang === 'ar' ? 'مدفوع فقط (Paid)' : 'Paid Only'}</option>
+              <option value="temporary">{lang === 'ar' ? 'تجريبي / تعويضي / مجاني' : 'Trial / Compensation'}</option>
+              <option value="restricted">{lang === 'ar' ? 'حسابات مقيدة (Restricted)' : 'Restricted Accounts'}</option>
               <option value="expired">{lang === 'ar' ? 'منتهي (Expired)' : 'Expired'}</option>
               <option value="canceled">{lang === 'ar' ? 'ملغي (Canceled)' : 'Canceled'}</option>
             </select>
@@ -1177,7 +1177,7 @@ Thank you for choosing us!`;
                           ) : null}
                           {!sub.isTemporaryCompensation && sub.renewalOption === 'base_price' ? (
                             <span className="text-[9px] text-amber-600 dark:text-amber-400 font-extrabold mt-1 bg-amber-50 dark:bg-amber-950/20 px-1 py-0.5 rounded w-fit" title={lang === 'ar' ? 'الخصم لمرة واحدة فقط، التجديد القادم بالسعر الأساسي' : 'One-time discount, next renewal is at base price'}>
-                              {lang === 'ar' ? '⚠️ الخصم لمرة واحدة' : '⚠️ One-time Discount'}
+                              {lang === 'ar' ? 'الخصم لمرة واحدة' : 'One-time Discount'}
                             </span>
                           ) : (!sub.isTemporaryCompensation && ((sub.additionalDiscount && sub.additionalDiscount > 0) || (sub.savingAmount && sub.savingAmount > 0)) ? (
                             <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-extrabold mt-1 bg-emerald-50 dark:bg-emerald-950/20 px-1 py-0.5 rounded w-fit" title={lang === 'ar' ? 'التجديد مستمر بنفس السعر المخفض كل شهر' : 'Renewal continues at the same discounted price every month'}>
@@ -1563,7 +1563,7 @@ Thank you for choosing us!`;
               {/* نظام احتساب سعر التجديد القادم */}
               <div className="p-3 bg-gray-50/50 dark:bg-gray-700/30 rounded-2xl border border-gray-100/50 dark:border-gray-700/50 space-y-2">
                 <label className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase block">
-                  {lang === 'ar' ? '⚙️ نظام احتساب سعر التجديد القادم' : '⚙️ Next Renewal Pricing Rule'}
+                  {lang === 'ar' ? 'نظام احتساب سعر التجديد القادم' : 'Next Renewal Pricing Rule'}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -1622,7 +1622,7 @@ Thank you for choosing us!`;
                         }
                       }}
                     />
-                    <span>{lang === 'ar' ? '🎁 اشتراك مؤقت / تجريبي تعويضي (3 أيام تجربة للعميل)' : '🎁 Temporary / Compensation Subscription (3-Day Test)'}</span>
+                    <span>{lang === 'ar' ? 'اشتراك مؤقت / تجريبي تعويضي (3 أيام تجربة للعميل)' : 'Temporary / Compensation Subscription (3-Day Test)'}</span>
                   </label>
                 </div>
 
@@ -1974,7 +1974,7 @@ Thank you for choosing us!`;
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-black text-purple-600 dark:text-purple-400 uppercase block">
-                    💬 رسالة خدمة العملاء المجهزة (جاهزة للنسخ)
+                    رسالة خدمة العملاء المجهزة (جاهزة للنسخ)
                   </label>
                   <button
                     type="button"

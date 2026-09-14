@@ -1219,7 +1219,7 @@ const Groups: React.FC = () => {
                             <td className="px-4 py-2 whitespace-nowrap">
                               {stu.is50PercentPaid ? (
                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                  ✅ مؤهل للتفعيل (نشط)
+                                  مؤهل للتفعيل (نشط)
                                 </span>
                               ) : (
                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
@@ -1294,9 +1294,9 @@ const Groups: React.FC = () => {
                 </span>
                 <h2 className="text-xl font-black mb-1">{selectedTraineesGroup.productName}</h2>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-indigo-100 font-bold mt-1">
-                  <span>📅 {selectedTraineesGroup.startDate}</span>
-                  <span>⏱️ {selectedTraineesGroup.scheduleLabel}</span>
-                  <span>👨‍🏫 {lang === 'ar' ? 'المدرب: ' : 'Trainer: '}{selectedTraineesGroup.trainer || 'TBD'}</span>
+                  <span>{selectedTraineesGroup.startDate}</span>
+                  <span>{selectedTraineesGroup.scheduleLabel}</span>
+                  <span>{lang === 'ar' ? 'المدرب: ' : 'Trainer: '}{selectedTraineesGroup.trainer || 'TBD'}</span>
                 </div>
               </div>
               <button 
