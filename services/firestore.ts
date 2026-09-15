@@ -405,6 +405,91 @@ export const cleanData = (data: any): any => {
   return data;
 };
 
+const roundCurrency = (amount: number) => Math.round((Number(amount) || 0) * 100) / 100;
+
+const getInstallmentFaceAmount = (installment: Installment) => {
+  const explicitOriginal = (installment as any).originalAmount;
+  return roundCurrency(Number(explicitOriginal ?? installment.amount) || 0);
+};
+
+const reconcileInstallmentScheduleAgainstPaidTotal = (
+  installments: Installment[] = [],
+  deposit: number,
+  paidTotal: number,
+  finalPrice: number
+): Installment[] => {
+  const targetRemaining = roundCurrency(Math.max(0, finalPrice - paidTotal));
+  let paidTowardsInstallments = roundCurrency(Math.max(0, paidTotal - (Number(deposit) || 0)));
+
+  let updated = installments.map((installment) => {
+    if (installment.status === 'cancelled') return installment;
+
+    const faceAmount = getInstallmentFaceAmount(installment);
+    const next: Installment = { ...installment, amount: faceAmount };
+
+    delete (next as any).paidAmount;
+    if ((next as any).originalAmount !== undefined && roundCurrency((next as any).originalAmount) === faceAmount) {
+      delete (next as any).originalAmount;
+    }
+
+    if (targetRemaining <= 0) {
+      next.status = 'paid';
+      return next;
+    }
+
+    if (paidTowardsInstallments >= faceAmount - 0.01) {
+      paidTowardsInstallments = roundCurrency(paidTowardsInstallments - faceAmount);
+      next.status = 'paid';
+      return next;
+    }
+
+    if (paidTowardsInstallments > 0.01) {
+      const paidPortion = paidTowardsInstallments;
+      paidTowardsInstallments = 0;
+      next.originalAmount = faceAmount;
+      next.paidAmount = roundCurrency(paidPortion);
+      next.amount = roundCurrency(Math.max(0, faceAmount - paidPortion));
+      next.status = installment.status === 'delayed' ? 'delayed' : 'pending';
+      return next;
+    }
+
+    if (next.status === 'paid') next.status = 'pending';
+    return next;
+  });
+
+  const activeIndexes = updated
+    .map((installment, index) => (installment.status === 'pending' || installment.status === 'delayed') ? index : -1)
+    .filter(index => index !== -1);
+
+  const activeTotal = roundCurrency(activeIndexes.reduce((sum, index) => sum + (updated[index].amount || 0), 0));
+  const delta = roundCurrency(targetRemaining - activeTotal);
+
+  if (Math.abs(delta) > 1 && activeIndexes.length > 0) {
+    const lastIndex = activeIndexes[activeIndexes.length - 1];
+    const installment = updated[lastIndex];
+    const newAmount = roundCurrency(Math.max(0, (installment.amount || 0) + delta));
+    const originalAmount = (installment.originalAmount ?? installment.amount ?? 0) + delta;
+    updated[lastIndex] = cleanData({
+      ...installment,
+      amount: newAmount,
+      originalAmount: installment.paidAmount ? roundCurrency(Math.max(newAmount, originalAmount)) : installment.originalAmount
+    });
+  } else if (targetRemaining > 0 && activeIndexes.length === 0) {
+    updated = [
+      ...updated,
+      {
+        dueDate: getCorrectDate().toISOString().split('T')[0],
+        amount: targetRemaining,
+        status: 'pending',
+        notifiedOnWhatsApp: false,
+        label: 'Remaining balance'
+      }
+    ];
+  }
+
+  return cleanData(updated);
+};
+
 export const syncAggregatedStats = async () => {
   const [bookings, staff] = await Promise.all([
     genericGet<Booking>('bookings'),
@@ -1005,25 +1090,34 @@ export const updateBookingInstallmentPlan = async (
   await runTransaction(db, async (transaction) => {
     const planSnap = await transaction.get(planRef);
     const bookingSnap = await transaction.get(bookingRef);
+    const booking = bookingSnap.exists() ? bookingSnap.data() as Booking : null;
+    const paidTotal = booking?.paymentSummary?.paidTotal ?? installmentPlan.deposit;
+    const finalPrice = booking?.pricing?.finalPriceSnapshot ?? (installmentPlan.deposit + installmentPlan.installments.reduce((sum, inst) => sum + (inst.amount || 0), 0));
+    const reconciledInstallments = reconcileInstallmentScheduleAgainstPaidTotal(
+      installmentPlan.installments,
+      installmentPlan.deposit,
+      paidTotal,
+      finalPrice
+    );
     
     if (!planSnap.exists()) {
       transaction.set(planRef, cleanData({
         bookingId,
         deposit: installmentPlan.deposit,
-        installments: installmentPlan.installments,
+        installments: reconciledInstallments,
         planType: installmentPlan.planType,
         planLabel: installmentPlan.planLabel
       }));
     } else {
       transaction.update(planRef, cleanData({
         deposit: installmentPlan.deposit,
-        installments: installmentPlan.installments,
+        installments: reconciledInstallments,
         planType: installmentPlan.planType,
         planLabel: installmentPlan.planLabel
       }));
     }
     
-    const firstPending = installmentPlan.installments.find(i => i.status === 'pending' || i.status === 'delayed');
+    const firstPending = reconciledInstallments.find(i => i.status === 'pending' || i.status === 'delayed');
     if (bookingSnap.exists()) {
       transaction.update(bookingRef, {
         'paymentSummary.next_due_date': firstPending?.dueDate || null
@@ -1407,12 +1501,15 @@ export const addPaymentAndUpdateBooking = async (
     }));
     if (installmentIndex !== undefined && planSnap.exists()) {
       const plan = planSnap.data() as InstallmentPlan;
-      const installments = [...plan.installments];
-      if (installments[installmentIndex]) {
-        installments[installmentIndex].status = 'paid';
-        transaction.update(planRef, cleanData({ installments }));
-        transaction.update(bookingRef, cleanData({ 'paymentSummary.next_due_date': installments.find(i => i.status === 'pending' || i.status === 'delayed')?.dueDate || null }));
-      }
+      const installments = reconcileInstallmentScheduleAgainstPaidTotal(
+        plan.installments || [],
+        plan.deposit || 0,
+        newPaidTotal,
+        booking.pricing.finalPriceSnapshot
+      );
+      const nextDueDate = installments.find(i => i.status === 'pending' || i.status === 'delayed')?.dueDate || null;
+      transaction.update(planRef, cleanData({ installments }));
+      transaction.update(bookingRef, cleanData({ 'paymentSummary.next_due_date': nextDueDate }));
     }
 
     // Log Payment
@@ -3102,19 +3199,12 @@ export const reconcileInstallmentsForBooking = async (bookingId: string): Promis
     if (planDoc.exists()) {
       const plan = planDoc.data() as InstallmentPlan;
       if (plan.installments && plan.installments.length > 0) {
-        let cumulativePaid = netPaid - (plan.deposit || 0);
-        const updatedInstallments = plan.installments.map(inst => {
-          if (cumulativePaid >= inst.amount && inst.amount > 0) {
-            cumulativePaid -= inst.amount;
-            return { ...inst, status: 'paid' as const };
-          } else if (cumulativePaid > 0) {
-            // Partially covered, but kept pending with updated balance
-            cumulativePaid = 0;
-            return { ...inst, status: inst.status === 'paid' ? ('pending' as const) : inst.status };
-          } else {
-            return { ...inst, status: inst.status === 'paid' && newRemaining > 0 ? ('pending' as const) : inst.status };
-          }
-        });
+        const updatedInstallments = reconcileInstallmentScheduleAgainstPaidTotal(
+          plan.installments,
+          plan.deposit || 0,
+          netPaid,
+          finalPrice
+        );
 
         // Find next due date
         const pendingInst = updatedInstallments.find(i => i.status === 'pending' || i.status === 'delayed');

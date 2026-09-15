@@ -886,13 +886,14 @@ const Bookings: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isManualInstallments) {
+    if (!isManualInstallments && !(editingBookingId && paymentPlanLocked)) {
       setManualInstallments(generateAutoInstallments());
     }
   }, [
     pricingDetails.finalPrice, deposit, installmentPlanType, installmentCount, 
     isManualInstallments, selectedGroupId, bookingDate,
-    isInternational, foreignCoursePrice, foreignOfferPrice, applyForeignOffer, foreignPaidAmount, exchangeRate, internationalCurrency
+    isInternational, foreignCoursePrice, foreignOfferPrice, applyForeignOffer, foreignPaidAmount, exchangeRate, internationalCurrency,
+    editingBookingId, paymentPlanLocked
   ]);
 
   const handlePreviewInstallments = () => {
@@ -1150,8 +1151,9 @@ const Bookings: React.FC = () => {
           transactionRef
         );
 
-        // Update the installment plan if rescheduling is not explicitly enabled
-        if (!rescheduleEnabled) {
+        // Keep existing payment history intact. After non-deposit payments exist,
+        // normal booking edits must not regenerate installments from the deposit only.
+        if (!rescheduleEnabled && !paymentPlanLocked) {
           const installments = manualInstallments;
           let planLabel = isInternational ? "سداد حجز دولي (استكمال المتبقي قبل الكورس بـ 3 أيام)" : "Full Payment Before Start Date";
           if (!isInternational) {

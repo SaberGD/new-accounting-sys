@@ -309,6 +309,8 @@ export interface InstallmentNote {
 export interface Installment {
   dueDate: string;
   amount: number;
+  originalAmount?: number;
+  paidAmount?: number;
   status: 'pending' | 'paid' | 'delayed' | 'cancelled';
   notifiedOnWhatsApp: boolean;
   delayContacted?: boolean;
