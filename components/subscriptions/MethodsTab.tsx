@@ -331,9 +331,9 @@ export function MethodsTab({ methods, loading, onRefresh, canManage }: MethodsTa
                   }}
                   className="w-full p-3 bg-gray-50 dark:bg-gray-700 text-sm font-bold rounded-xl outline-none"
                 >
-                  <option value="active">🟢 {lang === 'ar' ? 'نشطة (تعمل بشكل طبيعي)' : 'Active & Working'}</option>
-                  <option value="suspended">🟡 {lang === 'ar' ? 'موقوفة مؤقتاً' : 'Suspended'}</option>
-                  <option value="blocked">🔴 {lang === 'ar' ? 'محظورة / اتوقفت تماماً (يتطلب تغيير الفيزا)' : 'Blocked / Stopped'}</option>
+                  <option value="active">{lang === 'ar' ? 'نشطة (تعمل بشكل طبيعي)' : 'Active & Working'}</option>
+                  <option value="suspended">{lang === 'ar' ? 'موقوفة مؤقتاً' : 'Suspended'}</option>
+                  <option value="blocked">{lang === 'ar' ? 'محظورة / اتوقفت تماماً (يتطلب تغيير الفيزا)' : 'Blocked / Stopped'}</option>
                 </select>
               </div>
 

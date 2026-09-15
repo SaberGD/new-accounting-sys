@@ -817,7 +817,7 @@ export function AlertsTab({
           }`}
         >
           <i className="fas fa-calendar-check"></i>
-          <span>🗓️ التزامات وتجديدات القادمة (عموماً)</span>
+          <span>التزامات وتجديدات القادمة (عموماً)</span>
           <span className={`px-2 py-0.5 text-[10px] rounded-full font-bold ${
             subTab === 'obligations' ? 'bg-white/30 text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
           }`}>

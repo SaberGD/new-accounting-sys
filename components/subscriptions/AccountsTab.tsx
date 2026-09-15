@@ -833,7 +833,7 @@ export function AccountsTab({
                         {acc.status === 'reserved' || acc.isReserved ? (
                           <div className="flex flex-col items-center gap-1">
                             <span className="text-[10px] font-extrabold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 px-2.5 py-0.5 rounded-lg border border-purple-200 dark:border-purple-900/40 whitespace-nowrap">
-                              🔒 غير متاح للحجز ({activeSeatsCount} / {acc.maxSeats})
+                              غير متاح للحجز ({activeSeatsCount} / {acc.maxSeats})
                             </span>
                           </div>
                         ) : (
@@ -908,7 +908,7 @@ export function AccountsTab({
                           <div className="space-y-1">
                             <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-300 dark:border-purple-800 flex items-center gap-1 w-fit">
                               <i className="fas fa-lock text-[10px]"></i>
-                              <span>{lang === 'ar' ? '🔒 محجوز' : 'Reserved'}</span>
+                              <span>{lang === 'ar' ? 'محجوز' : 'Reserved'}</span>
                             </span>
                             {(acc.reservationReason || acc.notes) && (
                               <span className="block text-[10px] text-purple-800 dark:text-purple-300 font-bold bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-900/40 max-w-[180px] truncate" title={acc.reservationReason || acc.notes}>
@@ -1083,7 +1083,7 @@ export function AccountsTab({
                       const isCardBlocked = m.status === 'blocked' || m.status === 'suspended' || m.isSuspended || m.enabled === false;
                       return (
                         <option key={m.id} value={m.id}>
-                          {m.name} {isCardBlocked ? '(⛔ متوقفة / محظورة)' : ''}
+                          {m.name} {isCardBlocked ? '(متوقفة / محظورة)' : ''}
                         </option>
                       );
                     })}
@@ -1500,7 +1500,7 @@ export function AccountsTab({
                     }}
                   >
                     <option value="active">Active (نشط)</option>
-                    <option value="reserved">🔒 Reserved (محجوز - غير متاح للحجز)</option>
+                    <option value="reserved">Reserved (محجوز - غير متاح للحجز)</option>
                     <option value="restricted">Restricted (محظور / مقيد)</option>
                     <option value="suspended">Suspended (موقوف)</option>
                     <option value="expired">Expired (منتهي)</option>
