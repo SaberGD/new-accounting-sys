@@ -100,6 +100,16 @@ const SalesStaff: React.FC = () => {
     }
   };
 
+  // Users granted the 'sales' role from Users & Permissions but never added to this
+  // roster - they can log in but won't show up in the Bookings sales dropdown yet.
+  const unlinkedSalesUsers = profiles.filter(p => p.role === 'sales' && !staff.some(s => s.userId === p.uid));
+
+  const handleQuickAddFromUser = async (p: UserProfile) => {
+    const performedBy = userProfile ? { name: userProfile.displayName, email: userProfile.email } : undefined;
+    await genericAdd('sales_staff', { fullName: p.displayName, isActive: true, userId: p.uid, createdAt: serverTimestamp() }, performedBy);
+    fetchData();
+  };
+
   const handleBulkRevert = async (salesId: string) => {
     if (!confirm("Are you sure you want to return all reassigned customers to this sales representative?")) return;
     
@@ -149,6 +159,34 @@ const SalesStaff: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {unlinkedSalesUsers.length > 0 && (
+        <div className="mb-8 p-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-3xl">
+          <div className="flex items-center gap-2 mb-3">
+            <i className="fas fa-exclamation-triangle text-amber-500"></i>
+            <h3 className="font-black text-sm text-amber-700 dark:text-amber-400">
+              {unlinkedSalesUsers.length} {unlinkedSalesUsers.length === 1 ? 'user has' : 'users have'} the 'sales' role but aren't in this roster yet
+            </h3>
+          </div>
+          <p className="text-[11px] text-amber-600/80 dark:text-amber-400/70 mb-4">
+            They can log in, but won't appear as a Sales Representative option when creating a new booking until added here.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {unlinkedSalesUsers.map(p => (
+              <div key={p.uid} className="flex items-center gap-3 bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl border border-amber-100 dark:border-amber-900/40">
+                <span className="text-xs font-bold">{p.displayName}</span>
+                <span className="text-[10px] text-gray-400">{p.email}</span>
+                <button
+                  onClick={() => handleQuickAddFromUser(p)}
+                  className="text-[10px] font-black uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-xl transition-colors"
+                >
+                  <i className="fas fa-plus mr-1"></i> Add
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {staff.map(member => (
