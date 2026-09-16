@@ -44,6 +44,7 @@ const Groups: React.FC = () => {
   const [sortBy, setSortBy] = useState<'DEFAULT' | 'MONTH' | 'TYPE_COURSE' | 'STUDENT_COUNT'>('DEFAULT');
   const [exportStatus, setExportStatus] = useState<'UPCOMING' | 'STARTED' | 'FINISHED' | 'ALL'>('UPCOMING');
   const [showSummary, setShowSummary] = useState(false);
+  const [showSeatCounts, setShowSeatCounts] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedTraineesGroup, setSelectedTraineesGroup] = useState<Group | null>(null);
   const [reassignBooking, setReassignBooking] = useState<{ booking: Booking; customerName: string } | null>(null);
@@ -112,7 +113,21 @@ const Groups: React.FC = () => {
   const availableSlotsSummary = useMemo(() => {
     // Only groups that are UPCOMING and availableForBooking=true
     const activeGroups = groups.filter(g => g.status === 'UPCOMING' && g.availableForBooking);
-    
+
+    const seatCountsLabel = (g: Group) => {
+      if (!showSeatCounts) return '';
+      const booked = bookings.filter(b => b.status === 'ACTIVE' && b.groupId === g.id && !b.isDeleted).length;
+      const available = Math.max(0, (g.capacity || 0) - booked);
+      return ` — متاح ${available} مقعد (محجوز ${booked}/${g.capacity || 0})`;
+    };
+
+    // Sort same-schedule clusters, and groups within each cluster, chronologically by start date.
+    const sortedScheduleEntries = (bySchedule: Record<string, Group[]>) => {
+      return Object.entries(bySchedule)
+        .map(([days, gs]) => [days, [...gs].sort((a, b) => a.startDate.localeCompare(b.startDate))] as [string, Group[]])
+        .sort((a, b) => a[1][0].startDate.localeCompare(b[1][0].startDate));
+    };
+
     const byProduct: Record<string, Group[]> = {};
     activeGroups.forEach(g => {
       if (!byProduct[g.productId]) byProduct[g.productId] = [];
@@ -136,10 +151,10 @@ const Groups: React.FC = () => {
           bySchedule[scheduleKey].push(g);
         });
 
-        Object.entries(bySchedule).forEach(([days, scheduledGroups]) => {
+        sortedScheduleEntries(bySchedule).forEach(([days, scheduledGroups]) => {
           summaryText += `🗓 ${days}\n`;
           scheduledGroups.forEach(g => {
-            summaryText += `من ${formatTime12h(g.timeStart).replace(' AM', ' ص').replace(' PM', ' م')} إلى ${formatTime12h(g.timeEnd).replace(' AM', ' ص').replace(' PM', ' م')} | يبدأ ${formatMonthArabic(g.startDate)}\n`;
+            summaryText += `من ${formatTime12h(g.timeStart).replace(' AM', ' ص').replace(' PM', ' م')} إلى ${formatTime12h(g.timeEnd).replace(' AM', ' ص').replace(' PM', ' م')} | يبدأ ${formatMonthArabic(g.startDate)}${seatCountsLabel(g)}\n`;
           });
         });
       }
@@ -153,10 +168,10 @@ const Groups: React.FC = () => {
           bySchedule[scheduleKey].push(g);
         });
 
-        Object.entries(bySchedule).forEach(([days, scheduledGroups]) => {
+        sortedScheduleEntries(bySchedule).forEach(([days, scheduledGroups]) => {
           summaryText += `🗓 ${days}\n`;
           scheduledGroups.forEach(g => {
-            summaryText += `من ${formatTime12h(g.timeStart).replace(' AM', ' ص').replace(' PM', ' م')} إلى ${formatTime12h(g.timeEnd).replace(' AM', ' ص').replace(' PM', ' م')} | يبدأ ${formatMonthArabic(g.startDate)}\n`;
+            summaryText += `من ${formatTime12h(g.timeStart).replace(' AM', ' ص').replace(' PM', ' م')} إلى ${formatTime12h(g.timeEnd).replace(' AM', ' ص').replace(' PM', ' م')} | يبدأ ${formatMonthArabic(g.startDate)}${seatCountsLabel(g)}\n`;
           });
         });
       }
@@ -164,7 +179,7 @@ const Groups: React.FC = () => {
     });
 
     return summaryText.trim();
-  }, [groups, products]);
+  }, [groups, products, showSeatCounts, bookings]);
 
   const scheduleLabel = useMemo(() => {
     const days = formData.daysOfWeek
@@ -262,7 +277,7 @@ const Groups: React.FC = () => {
 
   const groupedByMonth = useMemo<Record<string, Group[]> | null>(() => {
     if (sortBy !== 'MONTH') return null;
-    
+
     const groupsByMonth: Record<string, Group[]> = {};
     sortedGroups.forEach(g => {
       if (!g.startDate) return;
@@ -271,6 +286,18 @@ const Groups: React.FC = () => {
       if (!groupsByMonth[monthYear]) groupsByMonth[monthYear] = [];
       groupsByMonth[monthYear].push(g);
     });
+
+    // Within each month, cluster groups that share the same weekly schedule (days) next to each other.
+    const dayScheduleKey = (g: Group) => (g.daysOfWeek || []).slice().sort().join(',');
+    Object.keys(groupsByMonth).forEach(monthYear => {
+      groupsByMonth[monthYear].sort((a, b) => {
+        const keyA = dayScheduleKey(a);
+        const keyB = dayScheduleKey(b);
+        if (keyA !== keyB) return keyA.localeCompare(keyB);
+        return a.startDate.localeCompare(b.startDate);
+      });
+    });
+
     return groupsByMonth;
   }, [sortedGroups, sortBy, lang]);
 
@@ -981,15 +1008,30 @@ const Groups: React.FC = () => {
               </h2>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Copy & Share with Customers</p>
             </div>
-            <button 
-              onClick={() => {
-                navigator.clipboard.writeText(availableSlotsSummary);
-                alert(lang === 'ar' ? 'تم النسخ!' : 'Copied to clipboard!');
-              }}
-              className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 transition-colors"
-            >
-              <i className="fas fa-copy mr-2"></i> {t('copy')}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowSeatCounts(v => !v)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-colors ${
+                  showSeatCounts
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'bg-gray-50 dark:bg-gray-700/30 text-gray-500 border-gray-200 dark:border-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <i className="fas fa-chair mr-2"></i>
+                {showSeatCounts
+                  ? (lang === 'ar' ? 'اخفاء الأعداد' : 'Hide Numbers')
+                  : (lang === 'ar' ? 'اظهار الأعداد' : 'Show Numbers')}
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(availableSlotsSummary);
+                  alert(lang === 'ar' ? 'تم النسخ!' : 'Copied to clipboard!');
+                }}
+                className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 transition-colors"
+              >
+                <i className="fas fa-copy mr-2"></i> {t('copy')}
+              </button>
+            </div>
           </div>
           
           <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl border-2 border-dashed border-indigo-100 dark:border-indigo-900/50 shadow-sm">
