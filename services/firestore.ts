@@ -883,6 +883,7 @@ export const updateBooking = async (
   return await runTransaction(db, async (transaction) => {
     const bookingRef = doc(db, 'bookings', bookingId);
     const statsRef = doc(db, 'stats', 'dashboard');
+    const planRef = doc(db, 'installment_plans', bookingId);
 
     // ALL READS FIRST
     const statsSnap = await transaction.get(statsRef);
@@ -891,6 +892,7 @@ export const updateBooking = async (
     const currentBooking = bookingSnap.data() as Booking;
     const customerSnap = await transaction.get(doc(db, 'customers', currentBooking.customerId));
     const customerName = (customerSnap.data() as Customer)?.name || customerData.name || 'Unknown';
+    const planSnap = await transaction.get(planRef);
 
     let currentPaid = currentBooking.paymentSummary.paidTotal || 0;
     let oldDeposit = 0;
@@ -945,11 +947,27 @@ export const updateBooking = async (
       : currentBooking.pricing.finalPriceSnapshot;
 
     const newRemaining = Math.max(0, finalPrice - updatedPaidTotal);
-    bookingData.paymentSummary = { 
-      ...currentBooking.paymentSummary, 
-      paidTotal: updatedPaidTotal, 
-      remaining: newRemaining 
+    bookingData.paymentSummary = {
+      ...currentBooking.paymentSummary,
+      paidTotal: updatedPaidTotal,
+      remaining: newRemaining
     };
+
+    // Keep the installment schedule in sync whenever the price and/or the paid
+    // total changes (e.g. a discount applied after some installments are already
+    // paid) - otherwise the plan's pending installments silently keep summing to
+    // the old remaining amount even though the booking itself now shows less.
+    if (planSnap.exists()) {
+      const plan = planSnap.data() as InstallmentPlan;
+      const planDeposit = newDeposit !== undefined ? newDeposit : plan.deposit;
+      const reconciledInstallments = reconcileInstallmentScheduleAgainstPaidTotal(
+        plan.installments,
+        planDeposit,
+        updatedPaidTotal,
+        finalPrice
+      );
+      transaction.update(planRef, cleanData({ deposit: planDeposit, installments: reconciledInstallments }) as any);
+    }
 
     if (!bookingData.whatsappStatus) bookingData.whatsappStatus = { ...currentBooking.whatsappStatus };
     bookingData.whatsappStatus.eligible = newRemaining <= (finalPrice * 0.5);
