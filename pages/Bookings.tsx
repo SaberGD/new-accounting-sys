@@ -37,6 +37,7 @@ import HistoryModal from '../components/HistoryModal';
 import { where } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import { smartCleanPhone } from './ConfirmBookingPortal';
+import { CrmLookupResult, lookupCrmClient, syncBookingToCrm } from '../services/crmIntegration';
 
 export const cleanLocalPhone = (raw: string, defaultDialCode: string = '+20') => {
   if (!raw) return { cleanLocal: '', countryCode: defaultDialCode, nationality: (defaultDialCode === '+20' ? 'egyptian' : 'other') as 'egyptian' | 'other' };
@@ -269,6 +270,11 @@ const Bookings: React.FC = () => {
     countryCode: '+20',
     nationality: 'egyptian' as 'egyptian' | 'other'
   });
+  const [crmLookup, setCrmLookup] = useState<CrmLookupResult | null>(null);
+  const [crmLookupError, setCrmLookupError] = useState('');
+  const [crmLookupLoading, setCrmLookupLoading] = useState(false);
+  const [crmSyncNotice, setCrmSyncNotice] = useState<{ bookingId: string; message: string; retry: boolean } | null>(null);
+  const [crmSyncLoading, setCrmSyncLoading] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedOfferId, setSelectedOfferId] = useState('');
@@ -586,6 +592,8 @@ const Bookings: React.FC = () => {
     setEditingBookingId(null);
     setPaymentPlanLocked(false);
     setCustomerData({ name: '', whatsapp: '', phone: '', email: '', countryCode: '+20', nationality: 'egyptian' });
+    setCrmLookup(null);
+    setCrmLookupError('');
     setCountrySearch('');
     setSelectedProductId('');
     setSelectedOfferId('');
@@ -908,6 +916,8 @@ const Bookings: React.FC = () => {
   }, [countrySearch]);
 
   const handleWhatsappInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCrmLookup(null);
+    setCrmLookupError('');
     const raw = e.target.value;
     const cleanDigits = raw.replace(/\D/g, '');
     if (raw.trim().startsWith('+') || (cleanDigits.length > 10 && (cleanDigits.startsWith('20') || cleanDigits.startsWith('966') || cleanDigits.startsWith('965') || cleanDigits.startsWith('971')))) {
@@ -920,6 +930,34 @@ const Bookings: React.FC = () => {
       });
     } else {
       setCustomerData({ ...customerData, whatsapp: cleanDigits });
+    }
+  };
+
+  const handleCrmLookup = async () => {
+    if (!customerData.whatsapp.trim()) return;
+    setCrmLookupLoading(true);
+    setCrmLookupError('');
+    setCrmLookup(null);
+    try {
+      setCrmLookup(await lookupCrmClient(customerData.whatsapp, customerData.countryCode));
+    } catch (error) {
+      setCrmLookupError(error instanceof Error ? error.message : 'تعذر البحث في CRM');
+    } finally {
+      setCrmLookupLoading(false);
+    }
+  };
+
+  const retryCrmSync = async (bookingId: string) => {
+    setCrmSyncLoading(true);
+    try {
+      const result = await syncBookingToCrm(bookingId);
+      setCrmSyncNotice({ bookingId, retry: false, message: result.action === 'no_match'
+        ? 'الحجز محفوظ، ولم يوجد عميل بنفس الرقم في CRM.'
+        : 'الحجز محفوظ وتم تحديث العميل في CRM.' });
+    } catch (error) {
+      setCrmSyncNotice({ bookingId, retry: true, message: `الحجز محفوظ في الحسابات، لكن تحديث CRM تعذّر: ${error instanceof Error ? error.message : 'خطأ غير معروف'}` });
+    } finally {
+      setCrmSyncLoading(false);
     }
   };
 
@@ -1198,7 +1236,8 @@ const Bookings: React.FC = () => {
           whatsappStatus: { eligible: (finalPriceForSystem - effectiveDeposit) <= (finalPriceForSystem * 0.5), added: false }
         };
         const initialPayment = effectiveDeposit > 0 ? { amount: effectiveDeposit, method: isInternational ? 'paypal' : paymentMethod, transactionRef, paymentDate: bookingDate, groupId: isDeferred ? null : selectedGroupId, note: isInternational ? `Initial Deposit (International: ${foreignPaidAmount} ${internationalCurrency})` : 'Initial Deposit', createdByUid: userProfile?.uid || '' } : undefined;
-        await createBooking(bookingData as any, finalCustomerData as any, { deposit: effectiveDeposit, installments, planType: isInternational ? 'none' : installmentPlanType, planLabel }, initialPayment as any, { name: userProfile?.displayName || 'Unknown', email: userProfile?.email || 'Unknown' });
+        const newBookingId = await createBooking(bookingData as any, finalCustomerData as any, { deposit: effectiveDeposit, installments, planType: isInternational ? 'none' : installmentPlanType, planLabel }, initialPayment as any, { name: userProfile?.displayName || 'Unknown', email: userProfile?.email || 'Unknown' });
+        await retryCrmSync(newBookingId);
       }
       setModalOpen(false); setEditingBookingId(null); fetchData();
     } catch (err: any) { setSaveError(err.message || "An unexpected error occurred while saving the booking."); } finally { setIsSaving(false); }
@@ -2079,6 +2118,13 @@ const Bookings: React.FC = () => {
           )}
         </div>
       </div>
+      {crmSyncNotice && (
+        <div className={`mb-6 p-4 border rounded-lg flex items-center gap-3 text-sm ${crmSyncNotice.retry ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}`}>
+          <span>{crmSyncNotice.message}</span>
+          {crmSyncNotice.retry && <button type="button" onClick={() => retryCrmSync(crmSyncNotice.bookingId)} disabled={crmSyncLoading} className="font-bold underline disabled:opacity-50">{crmSyncLoading ? 'جاري المحاولة...' : 'إعادة المحاولة'}</button>}
+          <button type="button" onClick={() => setCrmSyncNotice(null)} aria-label="إغلاق التنبيه" className="ml-auto"><i className="fas fa-times" /></button>
+        </div>
+      )}
       <div className="mb-6 flex gap-3">
         <button
           onClick={() => setStatusFilter('active')}
@@ -2428,6 +2474,19 @@ const Bookings: React.FC = () => {
                 )}
                 <div className="flex gap-2"><div className="w-20 p-3 bg-gray-100 dark:bg-gray-600 rounded-xl text-center text-sm font-black text-gray-500">{customerData.countryCode}</div><div className="flex-1 relative"><input type="text" placeholder={`WhatsApp ${customerData.nationality === 'egyptian' ? '(11 digits)' : ''} *`} required className={`w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm font-black tracking-widest ${validationErrors.whatsapp ? 'border-2 border-red-500' : ''}`} value={customerData.whatsapp} onChange={handleWhatsappInput} /></div></div>
                 {validationErrors.whatsapp && <p className="text-[9px] text-red-500 font-bold px-2">{validationErrors.whatsapp}</p>}
+                {!editingBookingId && (
+                  <div className="space-y-2">
+                    <button type="button" onClick={handleCrmLookup} disabled={crmLookupLoading || !customerData.whatsapp.trim()} className="text-xs font-bold text-primary-600 hover:underline disabled:opacity-50">
+                      {crmLookupLoading ? 'جاري البحث...' : 'بحث عن العميل في CRM'}
+                    </button>
+                    {crmLookupError && <p className="text-xs text-red-600">{crmLookupError}</p>}
+                    {crmLookup && <p className="text-xs p-3 rounded-lg bg-gray-100 dark:bg-gray-700" role="status">
+                      {crmLookup.ambiguous ? 'يوجد أكثر من عميل بنفس الرقم في CRM. راجع السجلات يدويًا.' : crmLookup.found && crmLookup.client
+                        ? `${crmLookup.client.name} | ${crmLookup.client.status} | ${crmLookup.client.serviceName || 'خدمة غير محددة'}${crmLookup.client.isBooked ? ' | حجز سابقًا' : ''}`
+                        : 'لا يوجد عميل بهذا الرقم في CRM.'}
+                    </p>}
+                  </div>
+                )}
                 <input type="text" placeholder="Alt Phone" className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm" value={customerData.phone} onChange={handlePhoneInput} />
                 <input type="email" placeholder="Email" className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm" value={customerData.email} onChange={e => setCustomerData({...customerData, email: e.target.value})} />
               </div>
