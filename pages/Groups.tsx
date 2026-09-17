@@ -62,6 +62,7 @@ const Groups: React.FC = () => {
   const [exportEvaluationSessions, setExportEvaluationSessions] = useState('1, 4, 7, 10, 13, 16, 19, 22');
   const [exportNotes, setExportNotes] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [trainingTransferStatus, setTrainingTransferStatus] = useState('');
 
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -535,8 +536,8 @@ const Groups: React.FC = () => {
     return list;
   }, [selectedExportGroup, exportWhatsappLink, exportTelegramLink, exportRecordingsUrl, studentsToExport, lang]);
 
-  const handleDownloadJSON = () => {
-    if (!selectedExportGroup) return;
+  const buildTrainingExportData = () => {
+    if (!selectedExportGroup) return null;
 
     const evalSessions = exportEvaluationSessions
       .split(',')
@@ -589,9 +590,16 @@ const Groups: React.FC = () => {
       }
     };
 
+    return exportData;
+  };
+
+  const handleDownloadJSON = () => {
+    if (!selectedExportGroup) return;
+    const exportData = buildTrainingExportData();
+    if (!exportData) return;
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const downloadAnchor = document.createElement('a');
-    
+    const courseName = selectedExportGroup.productName || 'Unknown Course';
     const normalizedCourseName = courseName.toLowerCase().replace(/[^a-z0-9]/gi, '-').replace(/-+/g, '-');
     const filename = `training-import-${normalizedCourseName}-${selectedExportGroup.startDate}.json`;
 
@@ -603,6 +611,35 @@ const Groups: React.FC = () => {
 
     showSuccessToast(lang === 'ar' ? 'تم تصدير ملف JSON بنجاح!' : 'JSON Export completed successfully!');
     setExportModalOpen(false);
+  };
+
+  const handleSendToTraining = () => {
+    const payload = buildTrainingExportData();
+    if (!payload) return;
+    const trainingOrigin = 'https://training.sabergroupacademy.com';
+    const popup = window.open(`${trainingOrigin}/#/groups?accountingImport=1`, '_blank');
+    if (!popup) {
+      setTrainingTransferStatus(lang === 'ar' ? 'المتصفح منع فتح التدريب. اسمح بفتح النافذة أو حمّل ملف JSON.' : 'The training window was blocked. Allow popups or download the JSON file.');
+      return;
+    }
+    setTrainingTransferStatus(lang === 'ar' ? 'جاري فتح التدريب...' : 'Opening Training...');
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== popup || event.origin !== trainingOrigin) return;
+      if (event.data?.type === 'sg-training-import-ready') {
+        popup.postMessage({ type: 'sg-accounting-import', payload }, trainingOrigin);
+      } else if (event.data?.type === 'sg-accounting-import-received') {
+        window.removeEventListener('message', onMessage);
+        window.clearTimeout(timeout);
+        setTrainingTransferStatus('');
+        setExportModalOpen(false);
+        showSuccessToast(lang === 'ar' ? 'تم فتح معاينة الاستيراد في التدريب.' : 'Training import preview is ready.');
+      }
+    };
+    window.addEventListener('message', onMessage);
+    const timeout = window.setTimeout(() => {
+      window.removeEventListener('message', onMessage);
+      setTrainingTransferStatus(lang === 'ar' ? 'لم يرد نظام التدريب. تأكد من تسجيل الدخول ثم جرّب مجددًا، أو حمّل ملف JSON.' : 'Training did not respond. Sign in and retry, or download the JSON file.');
+    }, 60000);
   };
 
   const handleDownloadCSV = () => {
@@ -1290,6 +1327,9 @@ const Groups: React.FC = () => {
               </button>
               
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <button type="button" onClick={handleSendToTraining} disabled={studentsToExport.length === 0} className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-xs disabled:opacity-50">
+                  {lang === 'ar' ? 'فتح في نظام التدريب' : 'Open in Training'}
+                </button>
                 <button 
                   type="button" 
                   onClick={handleDownloadExcel}
@@ -1318,6 +1358,7 @@ const Groups: React.FC = () => {
                 </button>
               </div>
             </div>
+            {trainingTransferStatus && <p className="px-6 pb-4 text-xs text-amber-700" role="status">{trainingTransferStatus}</p>}
 
           </div>
         </div>
