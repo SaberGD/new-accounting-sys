@@ -934,7 +934,10 @@ const Bookings: React.FC = () => {
   };
 
   const handleCrmLookup = async () => {
-    if (!customerData.whatsapp.trim()) return;
+    if (!customerData.whatsapp.trim()) {
+      setCrmLookupError('اكتب رقم WhatsApp أولاً للبحث في CRM.');
+      return;
+    }
     setCrmLookupLoading(true);
     setCrmLookupError('');
     setCrmLookup(null);
@@ -2476,8 +2479,9 @@ const Bookings: React.FC = () => {
                 {validationErrors.whatsapp && <p className="text-[9px] text-red-500 font-bold px-2">{validationErrors.whatsapp}</p>}
                 {!editingBookingId && (
                   <div className="space-y-2">
-                    <button type="button" onClick={handleCrmLookup} disabled={crmLookupLoading || !customerData.whatsapp.trim()} className="text-xs font-bold text-primary-600 hover:underline disabled:opacity-50">
-                      {crmLookupLoading ? 'جاري البحث...' : 'بحث عن العميل في CRM'}
+                    <button type="button" onClick={handleCrmLookup} disabled={crmLookupLoading} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-60">
+                      <i className={`fas ${crmLookupLoading ? 'fa-circle-notch fa-spin' : 'fa-search'}`} aria-hidden="true"></i>
+                      <span>{crmLookupLoading ? 'جاري البحث...' : 'بحث عن العميل في CRM'}</span>
                     </button>
                     {crmLookupError && <p className="text-xs text-red-600">{crmLookupError}</p>}
                     {crmLookup && <p className="text-xs p-3 rounded-lg bg-gray-100 dark:bg-gray-700" role="status">
