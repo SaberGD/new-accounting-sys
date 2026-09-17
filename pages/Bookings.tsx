@@ -1102,7 +1102,11 @@ const Bookings: React.FC = () => {
       // Calculate international details if enabled
       const effectiveForeignPrice = (applyForeignOffer && foreignOfferPrice > 0) ? foreignOfferPrice : foreignCoursePrice;
       const foreignDiscountAmount = applyForeignOffer ? Math.max(0, foreignCoursePrice - foreignOfferPrice) : 0;
-      const netForeignPaid = foreignPaidAmount - (foreignPaidAmount * (taxPercent / 100)) - (foreignPaidAmount * (commissionPercent / 100));
+      // 17% (transfer commission + tax) is deducted before converting to EGP - apply it
+      // consistently to both the paid amount AND the total price, otherwise a fully-paid
+      // international booking ends up with a phantom "remaining" balance equal to the fee.
+      const netOfTransferFees = (amount: number) => amount - (amount * (taxPercent / 100)) - (amount * (commissionPercent / 100));
+      const netForeignPaid = netOfTransferFees(foreignPaidAmount);
       const calculatedEgpDeposit = isInternational ? Math.round(netForeignPaid * exchangeRate * 100) / 100 : deposit;
       const effectiveDeposit = isInternational ? calculatedEgpDeposit : deposit;
 
@@ -1133,7 +1137,9 @@ const Bookings: React.FC = () => {
         extraDiscountReason: '',
         isScholarship: false,
         scholarshipReason: '',
-        finalPriceSnapshot: Math.round(effectiveForeignPrice * exchangeRate * 100) / 100
+        // Net of the same transfer commission + tax deducted from the paid amount above,
+        // so a booking paid in full shows zero remaining instead of ~17% still "owed".
+        finalPriceSnapshot: Math.round(netOfTransferFees(effectiveForeignPrice) * exchangeRate * 100) / 100
       } : {
         basePriceSnapshot: basePrice,
         appliedOffer: offer ? { isApplied: true, offerId: offer.id, offerReason: offer.reason, offerPrice: offer.offerPrice } : { isApplied: false, offerId: '', offerReason: '', offerPrice: 0 },
