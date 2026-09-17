@@ -21,11 +21,24 @@ async function callCrm<T>(payload: Record<string, unknown>): Promise<T> {
 export interface CrmLookupResult {
   found: boolean;
   ambiguous?: boolean;
-  client?: { id: string; name: string; status: string; serviceName: string; isBooked: boolean };
+  client?: {
+    id: string;
+    name: string;
+    status: string;
+    serviceName: string;
+    isBooked: boolean;
+    salesAgentName?: string;
+    lastFollowUpDate?: number | null;
+  };
 }
 
 export const lookupCrmClient = (phone: string, countryCode: string) =>
   callCrm<CrmLookupResult>({ action: 'lookup', phone, countryCode });
 
 export const syncBookingToCrm = (bookingId: string) =>
-  callCrm<{ success: boolean; action: 'updated' | 'already_synced' | 'no_match'; clientId?: string }>({ action: 'syncBooking', bookingId });
+  callCrm<{
+    success: boolean;
+    action: 'updated' | 'already_synced' | 'linked_older_booking' | 'no_match';
+    clientId?: string;
+    overwroteFinancials?: boolean;
+  }>({ action: 'syncBooking', bookingId });
