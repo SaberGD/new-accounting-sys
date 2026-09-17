@@ -954,9 +954,14 @@ const Bookings: React.FC = () => {
     setCrmSyncLoading(true);
     try {
       const result = await syncBookingToCrm(bookingId);
-      setCrmSyncNotice({ bookingId, retry: false, message: result.action === 'no_match'
+      const message = result.action === 'no_match'
         ? 'الحجز محفوظ، ولم يوجد عميل بنفس الرقم في CRM.'
-        : 'الحجز محفوظ وتم تحديث العميل في CRM.' });
+        : result.action === 'linked_older_booking'
+          ? 'الحجز محفوظ وربط بسجل العميل في CRM، لكن بيانات حجز أحدث لم تتغير.'
+          : result.overwroteFinancials
+            ? 'الحجز محفوظ. تم اعتماد أرقام الحسابات في CRM وحفظ الأرقام السابقة في سجل المزامنة.'
+            : 'الحجز محفوظ وتم تحديث العميل في CRM.';
+      setCrmSyncNotice({ bookingId, retry: false, message });
     } catch (error) {
       setCrmSyncNotice({ bookingId, retry: true, message: `الحجز محفوظ في الحسابات، لكن تحديث CRM تعذّر: ${error instanceof Error ? error.message : 'خطأ غير معروف'}` });
     } finally {

@@ -36,4 +36,9 @@ export const lookupCrmClient = (phone: string, countryCode: string) =>
   callCrm<CrmLookupResult>({ action: 'lookup', phone, countryCode });
 
 export const syncBookingToCrm = (bookingId: string) =>
-  callCrm<{ success: boolean; action: 'updated' | 'already_synced' | 'no_match'; clientId?: string }>({ action: 'syncBooking', bookingId });
+  callCrm<{
+    success: boolean;
+    action: 'updated' | 'already_synced' | 'linked_older_booking' | 'no_match';
+    clientId?: string;
+    overwroteFinancials?: boolean;
+  }>({ action: 'syncBooking', bookingId });
