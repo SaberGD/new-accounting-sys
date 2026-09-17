@@ -21,7 +21,15 @@ async function callCrm<T>(payload: Record<string, unknown>): Promise<T> {
 export interface CrmLookupResult {
   found: boolean;
   ambiguous?: boolean;
-  client?: { id: string; name: string; status: string; serviceName: string; isBooked: boolean };
+  client?: {
+    id: string;
+    name: string;
+    status: string;
+    serviceName: string;
+    isBooked: boolean;
+    salesAgentName?: string;
+    lastFollowUpDate?: number | null;
+  };
 }
 
 export const lookupCrmClient = (phone: string, countryCode: string) =>

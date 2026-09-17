@@ -2484,11 +2484,20 @@ const Bookings: React.FC = () => {
                       <span>{crmLookupLoading ? 'جاري البحث...' : 'بحث عن العميل في CRM'}</span>
                     </button>
                     {crmLookupError && <p className="text-xs text-red-600">{crmLookupError}</p>}
-                    {crmLookup && <p className="text-xs p-3 rounded-lg bg-gray-100 dark:bg-gray-700" role="status">
-                      {crmLookup.ambiguous ? 'يوجد أكثر من عميل بنفس الرقم في CRM. راجع السجلات يدويًا.' : crmLookup.found && crmLookup.client
-                        ? `${crmLookup.client.name} | ${crmLookup.client.status} | ${crmLookup.client.serviceName || 'خدمة غير محددة'}${crmLookup.client.isBooked ? ' | حجز سابقًا' : ''}`
-                        : 'لا يوجد عميل بهذا الرقم في CRM.'}
-                    </p>}
+                    {crmLookup && (
+                      <div className="space-y-2 rounded-lg bg-gray-100 p-3 text-xs dark:bg-gray-700" role="status">
+                        {crmLookup.ambiguous ? <p>يوجد أكثر من عميل بنفس الرقم في CRM. راجع السجلات يدويًا.</p> : crmLookup.found && crmLookup.client ? (
+                          <>
+                            <p className="font-bold">{crmLookup.client.name} | {crmLookup.client.status} | {crmLookup.client.serviceName || 'خدمة غير محددة'}{crmLookup.client.isBooked ? ' | حجز سابقًا' : ''}</p>
+                            {crmLookup.client.salesAgentName && <p>السيلز: {crmLookup.client.salesAgentName}</p>}
+                            {crmLookup.client.lastFollowUpDate && <p>آخر متابعة: {new Date(crmLookup.client.lastFollowUpDate).toLocaleString('ar-EG')}</p>}
+                            <button type="button" onClick={() => setCustomerData(prev => ({ ...prev, name: crmLookup.client!.name }))} className="rounded-lg bg-white px-3 py-2 font-bold text-primary-700 hover:bg-primary-50 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                              استخدام الاسم من CRM
+                            </button>
+                          </>
+                        ) : <p>لا يوجد عميل بهذا الرقم في CRM.</p>}
+                      </div>
+                    )}
                   </div>
                 )}
                 <input type="text" placeholder="Alt Phone" className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-xl outline-none text-sm" value={customerData.phone} onChange={handlePhoneInput} />
