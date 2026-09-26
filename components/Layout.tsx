@@ -91,6 +91,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { to: '/groups', icon: 'fa-users-rectangle', label: 'groups', permission: 'viewGroups' },
     { to: '/bookings', icon: 'fa-calendar-check', label: 'bookings', permission: 'viewBookings' },
     { to: '/booking-forms', icon: 'fa-wpforms', label: 'bookingForms', permission: 'viewBookings' },
+    { to: '/event-forms', icon: 'fa-calendar-check', label: 'eventForms', permission: 'viewEventForms' },
     { to: '/customers', icon: 'fa-address-book', label: 'customers', permission: 'viewCustomers' },
     { to: '/student-search', icon: 'fa-magnifying-glass-chart', label: 'studentSearch', permission: 'viewCustomers' },
     { to: '/deactivated', icon: 'fa-ban', label: 'deactivated', permission: 'viewBookings' },

@@ -301,5 +301,15 @@ service cloud.firestore {
       allow create: if true;
       allow read, update, delete: if isAuthenticated();
     }
+
+    match /event_forms/{formId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    match /event_form_submissions/{subId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
   }
 }

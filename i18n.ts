@@ -167,6 +167,7 @@ export const translations = {
     selectCustomer: "Select Customer",
     promoCodes: "Promo Codes",
     bookingForms: "Confirmation Forms",
+    eventForms: "Event Forms",
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -336,6 +337,7 @@ export const translations = {
     selectCustomer: "اختر عميلاً",
     promoCodes: "أكواد الخصم",
     bookingForms: "تأكيد البيانات (Forms)",
+    eventForms: "استمارات الفعاليات",
   }
 };
 

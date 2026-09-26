@@ -35,6 +35,8 @@ import PermissionsControl from './pages/PermissionsControl';
 import ProgramSubscriptions from './pages/ProgramSubscriptions';
 import ConfirmBookingPortal from './pages/ConfirmBookingPortal';
 import BookingForms from './pages/BookingForms';
+import EventForms from './pages/EventForms';
+import EventFormPublic from './pages/EventFormPublic';
 import Landing from './pages/Landing';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, permission?: PermissionKey }> = ({ children, permission }) => {
@@ -154,6 +156,7 @@ const App: React.FC = () => {
             <Route path="/booking-form" element={<ConfirmBookingPortal />} />
             <Route path="/confirm-scholarship" element={<ConfirmBookingPortal formType="scholarship" />} />
             <Route path="/scholarship-form" element={<ConfirmBookingPortal formType="scholarship" />} />
+            <Route path="/event-form/:formId" element={<EventFormPublic />} />
             
             <Route path="/" element={<ProtectedRoute permission="viewDashboard"><Dashboard /></ProtectedRoute>} />
             <Route path="/catalog" element={<ProtectedRoute permission="viewCatalog"><Catalog /></ProtectedRoute>} />
@@ -163,6 +166,7 @@ const App: React.FC = () => {
             <Route path="/branches" element={<ProtectedRoute permission="viewBranches"><Branches /></ProtectedRoute>} />
             <Route path="/bookings" element={<ProtectedRoute permission="viewBookings"><Bookings /></ProtectedRoute>} />
             <Route path="/booking-forms" element={<ProtectedRoute permission="viewBookings"><BookingForms /></ProtectedRoute>} />
+            <Route path="/event-forms" element={<ProtectedRoute permission="viewEventForms"><EventForms /></ProtectedRoute>} />
             <Route path="/customers" element={<ProtectedRoute permission="viewCustomers"><Customers /></ProtectedRoute>} />
             <Route path="/student-search" element={<ProtectedRoute permission="viewCustomers"><StudentSearch /></ProtectedRoute>} />
             <Route path="/deactivated" element={<ProtectedRoute permission="viewBookings"><Deactivated /></ProtectedRoute>} />

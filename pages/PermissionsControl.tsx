@@ -40,6 +40,7 @@ const PermissionsControl: React.FC = () => {
     { key: 'viewSalesStaff', label: 'Sales Staff Management', group: 'Navigation' },
     { key: 'viewGuide', label: 'System Guide', group: 'Navigation' },
     { key: 'viewAllBookings', label: 'View All Bookings (vs Own Only)', group: 'Navigation' },
+    { key: 'viewEventForms', label: 'Event Forms Access', group: 'Navigation' },
     { key: 'viewHistory', label: 'View Audit Logs', group: 'Actions' },
     { key: 'editBookings', label: 'Edit Booking Details', group: 'Actions' },
     { key: 'editGroups', label: 'Edit Group Details', group: 'Actions' },
@@ -57,6 +58,7 @@ const PermissionsControl: React.FC = () => {
     { key: 'manageCatalog', label: 'Manage Catalog/Pricing', group: 'Management' },
     { key: 'manageOffers', label: 'Manage Offers', group: 'Management' },
     { key: 'manageBranches', label: 'Manage Branches', group: 'Management' },
+    { key: 'manageEventForms', label: 'Manage Event Forms', group: 'Management' },
     { key: 'manageSystemTools', label: 'Data Integrity Tools', group: 'System' },
     { key: 'impersonation', label: 'Role Impersonation (View As)', group: 'System' },
   ];

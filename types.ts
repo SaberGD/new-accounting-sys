@@ -46,7 +46,9 @@ export type PermissionKey =
   | 'viewComplaints'
   | 'manageComplaints'
   | 'viewProgramSubscriptions'
-  | 'manageBookingForms';
+  | 'manageBookingForms'
+  | 'viewEventForms'
+  | 'manageEventForms';
 
 export type PermissionsMap = {
   [key in PermissionKey]: {
@@ -544,4 +546,38 @@ export interface BookingFormSubmission {
   scholarshipReason?: string;
   installmentPlan?: string;
   installmentPlanNotes?: string;
+}
+
+// ===============================================================
+// Event Forms (free-form lead-collection forms for events/workshops)
+// ===============================================================
+
+export type EventFormFieldType = 'text' | 'whatsapp' | 'phone' | 'url' | 'textarea';
+
+export interface EventFormField {
+  id: string;
+  label: string;
+  type: EventFormFieldType;
+  required: boolean;
+  // Only meaningful when type === 'phone': shows a "same as WhatsApp" checkbox
+  // on the public form so the visitor doesn't have to retype the same number.
+  allowSameAsWhatsapp?: boolean;
+}
+
+export interface EventForm {
+  id: string;
+  eventName: string;
+  description?: string;
+  fields: EventFormField[];
+  isOpen: boolean;
+  createdAt: string;
+  createdBy?: string;
+  closedAt?: string;
+}
+
+export interface EventFormSubmission {
+  id: string;
+  formId: string;
+  answers: Record<string, string>;
+  submittedAt: string;
 }
