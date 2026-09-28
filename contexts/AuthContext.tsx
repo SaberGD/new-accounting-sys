@@ -74,8 +74,8 @@ const defaultPermissions: PermissionsMap = {
   manageComplaints: { admin: true, supervisor: true, manager: true, training_team_leader: true, sales: true },
   viewProgramSubscriptions: { admin: true, supervisor: true, manager: true, training_team_leader: false, sales: true },
   manageBookingForms: { admin: true, supervisor: true, manager: true, training_team_leader: true, sales: true },
-  viewEventForms: { admin: true, supervisor: true, manager: true, training_team_leader: false, sales: false },
-  manageEventForms: { admin: true, supervisor: true, manager: true, training_team_leader: false, sales: false },
+  viewEventForms: { admin: true, supervisor: true, manager: true, training_team_leader: true, sales: true },
+  manageEventForms: { admin: true, supervisor: true, manager: true, training_team_leader: true, sales: true },
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
