@@ -106,11 +106,24 @@ service cloud.firestore {
     // Rules
     // ===============================================================
 
+    // A self-created profile may only claim the role already granted to that
+    // email in allowed_users - otherwise anyone who signs up (Signup.tsx is a
+    // public route) could write role:'admin' onto their own profile and pass
+    // every isAdmin() check in this file from then on.
+    function invitedRoleMatches(email, role) {
+      return exists(/databases/$(database)/documents/allowed_users/$(email)) &&
+             get(/databases/$(database)/documents/allowed_users/$(email)).data.role == role &&
+             get(/databases/$(database)/documents/allowed_users/$(email)).data.isActive == true;
+    }
+
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
-                    (isOwner(userId) || isAdmin());
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) &&
+                    (
+                      isAdmin() ||
+                      (isOwner(userId) && invitedRoleMatches(request.resource.data.email, request.resource.data.role))
+                    );
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) &&
                     (isOwner(userId) || isAdmin()) &&
                     (request.resource.data.role == resource.data.role || isAdmin());
     }
@@ -121,7 +134,9 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
-      allow read: if true;
+      // settings/permissions holds the whole role-permission matrix - no reason
+      // for it to be readable by a logged-out visitor.
+      allow read: if isAuthenticated();
       allow write: if isAdmin() || isSupervisor();
     }
 
@@ -291,9 +306,13 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
-    // Booking confirmation portal forms & submissions
+    // Booking confirmation portal forms & submissions.
+    // Split get/list: the public portal only ever fetches one known formId
+    // (get), so it doesn't need - and shouldn't have - permission to list
+    // every form in the collection.
     match /booking_forms/{formId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isAuthenticated();
       allow write: if isAuthenticated();
     }
 
@@ -302,8 +321,12 @@ service cloud.firestore {
       allow read, update, delete: if isAuthenticated();
     }
 
+    // Same get/list split as booking_forms above - a visitor with a share
+    // link can load that one form, but can't browse the whole collection to
+    // discover every event you've ever created (including closed ones).
     match /event_forms/{formId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isAuthenticated();
       allow write: if isAuthenticated();
     }
 
