@@ -16,6 +16,7 @@ const Exports: React.FC = () => {
   const [loading, setLoading] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [auditResults, setAuditResults] = useState<any[] | null>(null);
   
   // Cache for lookup data
   const [catalog, setCatalog] = useState<any[]>([]);
@@ -445,6 +446,73 @@ const Exports: React.FC = () => {
     }
   };
 
+  // A booking's installment schedule (deposit + every non-cancelled installment's face value)
+  // should always sum to its final price. When it doesn't - usually a leftover from before a
+  // price/discount edit was made to a booking whose schedule was set earlier - payments can
+  // land in confusing places (see the reconciliation logic in services/firestore.ts). This scans
+  // every active booking for that mismatch so it can be caught before it surprises a customer.
+  const handleRunInstallmentAudit = async () => {
+    setLoading('installment_audit');
+    try {
+      const [allBookings, allPlans, allCustomers] = await Promise.all([
+        genericGet<Booking>('bookings'),
+        genericGet<InstallmentPlan>('installment_plans'),
+        genericGet<Customer>('customers')
+      ]);
+      const plansByBookingId = new Map(allPlans.map(p => [p.bookingId, p]));
+
+      const results: any[] = [];
+      allBookings.forEach(b => {
+        if (b.status !== 'ACTIVE') return;
+        const plan = plansByBookingId.get(b.id);
+        if (!plan || !plan.installments || plan.installments.length === 0) return;
+
+        const activeInstallmentsTotal = plan.installments
+          .filter(i => i.status !== 'cancelled')
+          .reduce((sum, i) => sum + ((i.originalAmount ?? i.amount) || 0), 0);
+        const scheduleTotal = Math.round(((plan.deposit || 0) + activeInstallmentsTotal) * 100) / 100;
+        const finalPrice = Math.round((b.pricing?.finalPriceSnapshot || 0) * 100) / 100;
+        const diff = Math.round((finalPrice - scheduleTotal) * 100) / 100;
+
+        if (Math.abs(diff) > 1) {
+          const cust = allCustomers.find(c => c.id === b.customerId);
+          results.push({
+            'Customer Name': cust?.name || 'N/A',
+            'Booking ID': b.id,
+            'Final Price (EGP)': finalPrice,
+            'Deposit + Installments Total (EGP)': scheduleTotal,
+            'Missing / Extra (EGP)': diff,
+            'Paid So Far (EGP)': b.paymentSummary?.paidTotal || 0,
+            'Remaining Shown (EGP)': b.paymentSummary?.remaining || 0
+          });
+        }
+      });
+
+      results.sort((a, b) => Math.abs(b['Missing / Extra (EGP)']) - Math.abs(a['Missing / Extra (EGP)']));
+      setAuditResults(results);
+    } catch (err) {
+      console.error(err);
+      alert('Installment audit failed');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleExportAuditResults = () => {
+    if (!auditResults || auditResults.length === 0) return;
+    const excelBuffer = exportToExcel(auditResults, 'installment_schedule_audit');
+    if (excelBuffer) {
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `installment_schedule_audit_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   const exportTypes = [
     { label: 'Customers', collection: 'customers', icon: 'fa-address-book', color: 'bg-blue-500' },
     { label: 'Bookings', collection: 'bookings', icon: 'fa-calendar-check', color: 'bg-indigo-500' },
@@ -533,6 +601,85 @@ const Exports: React.FC = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Installment Schedule Audit Card */}
+      <div className="mb-8 bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] shadow-sm border border-amber-200 dark:border-amber-900/30">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-2">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-[11px] font-bold uppercase tracking-wider mb-3">
+              <i className="fas fa-triangle-exclamation"></i>
+              <span>Data Integrity</span>
+            </div>
+            <h2 className="text-2xl font-black mb-2">تدقيق جدول الأقساط</h2>
+            <p className="text-xs text-gray-500 leading-relaxed font-medium">
+              يفحص كل الحجوزات النشطة ويقارن (المقدم + كل الأقساط غير الملغاة) بسعر الحجز النهائي. أي فرق أكبر من جنيه واحد معناه إن جدول الأقساط قديم/غير متزامن مع السعر الحالي - وده ممكن يسبب لبس زي اللي حصل مع حجز ياسمينا.
+            </p>
+          </div>
+          <div className="flex flex-wrap sm:flex-nowrap gap-3 shrink-0">
+            <button
+              disabled={!!loading}
+              onClick={handleRunInstallmentAudit}
+              className="px-6 py-3.5 bg-amber-600 text-white hover:bg-amber-700 rounded-2xl font-black text-xs shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+            >
+              {loading === 'installment_audit' ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-magnifying-glass-dollar"></i>}
+              <span>تشغيل الفحص</span>
+            </button>
+            {auditResults && auditResults.length > 0 && (
+              <button
+                disabled={!!loading}
+                onClick={handleExportAuditResults}
+                className="px-6 py-3.5 bg-gray-900 dark:bg-gray-700 text-white hover:bg-gray-800 rounded-2xl font-black text-xs shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              >
+                <i className="fas fa-file-excel"></i>
+                <span>تصدير النتائج</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {auditResults && (
+          auditResults.length === 0 ? (
+            <div className="mt-4 p-5 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-2xl text-green-700 dark:text-green-400 text-sm font-bold flex items-center gap-3">
+              <i className="fas fa-circle-check text-lg"></i>
+              مفيش أي حجز نشط عنده فرق بين جدول الأقساط والسعر النهائي.
+            </div>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <div className="mb-3 text-sm font-bold text-amber-700 dark:text-amber-400">
+                لقينا {auditResults.length} حجز فيه فرق يستحق المراجعة:
+              </div>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 text-xs uppercase">
+                    <th className="p-3 text-right font-bold">العميل</th>
+                    <th className="p-3 text-right font-bold">رقم الحجز</th>
+                    <th className="p-3 text-center font-bold">السعر النهائي</th>
+                    <th className="p-3 text-center font-bold">إجمالي الجدول (مقدم+أقساط)</th>
+                    <th className="p-3 text-center font-bold">الفرق</th>
+                    <th className="p-3 text-center font-bold">المدفوع حتى الآن</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditResults.map((r, i) => (
+                    <tr key={i} className="border-b border-gray-100 dark:border-gray-700">
+                      <td className="p-3 font-bold">{r['Customer Name']}</td>
+                      <td className="p-3 text-gray-400 font-mono text-xs">{r['Booking ID']}</td>
+                      <td className="p-3 text-center">{r['Final Price (EGP)'].toLocaleString()} EGP</td>
+                      <td className="p-3 text-center">{r['Deposit + Installments Total (EGP)'].toLocaleString()} EGP</td>
+                      <td className={`p-3 text-center font-black ${r['Missing / Extra (EGP)'] > 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                        {r['Missing / Extra (EGP)'] > 0
+                          ? `ناقص ${Math.abs(r['Missing / Extra (EGP)']).toLocaleString()} EGP`
+                          : `زيادة ${Math.abs(r['Missing / Extra (EGP)']).toLocaleString()} EGP`}
+                      </td>
+                      <td className="p-3 text-center">{r['Paid So Far (EGP)'].toLocaleString()} EGP</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
