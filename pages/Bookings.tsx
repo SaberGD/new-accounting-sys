@@ -1620,7 +1620,25 @@ const Bookings: React.FC = () => {
 
     const firstPayment = payments.sort((a, b) => a.paymentDate.localeCompare(b.paymentDate))[0];
     const depositMethod = firstPayment?.method || 'cash_office';
-    
+
+    // installment.amount always reflects the *current schedule*, which gets rebalanced after
+    // every payment - it can diverge from what was actually handed over in a given transaction
+    // (e.g. when a booking's original schedule didn't add up to its final price). Pull the real
+    // received amount per installment from the payment logs so the invoice can show it alongside
+    // the scheduled value instead of only the scheduled value.
+    let actualPaidByInstallmentIndex: Record<number, number> = {};
+    try {
+      const logs = await getBookingLogs(booking.id);
+      logs.filter(l => l.action === 'PAYMENT' && l.details?.installmentIndex !== undefined && l.details?.installmentIndex !== null)
+        .forEach(l => {
+          const idx = l.details!.installmentIndex as number;
+          const amt = Number(l.details!.amount) || 0;
+          actualPaidByInstallmentIndex[idx] = (actualPaidByInstallmentIndex[idx] || 0) + amt;
+        });
+    } catch (e) {
+      console.error("Error fetching booking logs for PDF:", e);
+    }
+
     const paymentMethodLabelsAr: Record<string, string> = {
       cash_office: 'نقدي (مقر الأكاديمية)',
       instapay: 'انستا باي (InstaPay)',
@@ -1972,10 +1990,17 @@ const Bookings: React.FC = () => {
                   inst.status === 'delayed' ? '#dc2626' : 
                   inst.status === 'cancelled' ? '#94a3b8' : '#d97706';
                 
-                const statusBg = 
-                  inst.status === 'paid' ? '#f0fdf4' : 
-                  inst.status === 'delayed' ? '#fef2f2' : 
+                const statusBg =
+                  inst.status === 'paid' ? '#f0fdf4' :
+                  inst.status === 'delayed' ? '#fef2f2' :
                   inst.status === 'cancelled' ? '#f8fafc' : '#fffbeb';
+
+                // What was actually handed over against this installment, per the payment logs -
+                // can differ from inst.amount (the rebalanced schedule value) when a payment
+                // over/under-shoots the installment it was recorded against.
+                const actualReceived = actualPaidByInstallmentIndex[idx];
+                const hasActualDiff = actualReceived !== undefined && Math.abs(actualReceived - inst.amount) > 1;
+                const hasPartialPaid = (inst.status === 'pending' || inst.status === 'delayed') && (inst.paidAmount || 0) > 0.01;
 
                 return `
                 <tr style="border-bottom: 1px solid #eee; background: ${inst.status === 'paid' ? '#fcfcfc' : '#fff'};">
@@ -1989,6 +2014,8 @@ const Bookings: React.FC = () => {
                     <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 900; background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusColor}33;">
                       ${statusLabel}
                     </span>
+                    ${hasActualDiff ? `<div style="font-size: 10px; color: #0369a1; font-weight: 800; margin-top: 4px;">المبلغ الفعلي المستلم: ${actualReceived!.toLocaleString()} EGP</div>` : ''}
+                    ${hasPartialPaid ? `<div style="font-size: 10px; color: #0369a1; font-weight: 800; margin-top: 4px;">تم سداد ${(inst.paidAmount || 0).toLocaleString()} EGP منه بالفعل</div>` : ''}
                   </td>
                   <td style="padding: 12px; text-align: center; font-size: 11px; color: #666;">
                     ${idx === 0 ? 'استكمال 50%' : idx === plan.installments.length - 1 ? 'القسط الأخير' : inst.label || '-'}
