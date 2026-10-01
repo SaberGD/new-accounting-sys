@@ -6,6 +6,7 @@ import { CustomerSubscription, SubscriptionAccount, SubscriptionType } from './t
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { WhatsAppRedirectModal } from './WhatsAppRedirectModal';
+import { escapeHtml } from '../../utils/html';
 
 interface CollectionsTabProps {
   customerSubs: CustomerSubscription[];
@@ -57,6 +58,10 @@ export function CollectionsTab({
       }
     };
     const lastPaymentDate = getLastPaymentDate(sub.endDate);
+    const safeCustomerName = escapeHtml(sub.customerName);
+    const safeCustomerPhone = escapeHtml(sub.customerPhone || '-');
+    const safeTypeName = escapeHtml(type?.name || 'غير محدد');
+    const safeAccountEmail = escapeHtml(acc?.email || 'سيتم إرساله للعميل');
 
     // Create container for PDF content
     const container = document.createElement('div');
@@ -102,8 +107,8 @@ export function CollectionsTab({
                 <span>بيانات العميل</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: #333;">
-                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">الاسم :</span> <span style="font-weight: 800;">${sub.customerName}</span></div>
-                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">رقم الهاتف :</span> <span style="font-weight: 800; direction: ltr;">${sub.customerPhone || '-'}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">الاسم :</span> <span style="font-weight: 800;">${safeCustomerName}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">رقم الهاتف :</span> <span style="font-weight: 800; direction: ltr;">${safeCustomerPhone}</span></div>
               </div>
             </div>
             <!-- Program Info (Left) -->
@@ -112,8 +117,8 @@ export function CollectionsTab({
                 <span>بيانات الاشتراك</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: #333;">
-                <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 90px;">اسم البرنامج :</span> <span style="font-weight: 800;">${type?.name || 'غير محدد'}</span></div>
-                <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 90px;">حساب الدخول :</span> <span style="font-weight: 800; color: #1e40af;">${acc?.email || 'سيتم إرساله للعميل'}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 90px;">اسم البرنامج :</span> <span style="font-weight: 800;">${safeTypeName}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 90px;">حساب الدخول :</span> <span style="font-weight: 800; color: #1e40af;">${safeAccountEmail}</span></div>
                 <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 90px;">تاريخ البدء :</span> <span style="font-weight: 800; direction: ltr;">${sub.startDate.split('-').reverse().join(' / ')}</span></div>
                 <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 90px;">تاريخ التجديد :</span> <span style="font-weight: 800; direction: ltr; color: #dc2626;">${sub.endDate ? sub.endDate.split('-').reverse().join(' / ') : 'غير محدد'}</span></div>
               </div>

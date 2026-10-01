@@ -55,30 +55,51 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
+    function isSuperAdminIdentity() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "saber.gd.fl@gmail.com" && request.auth.token.email_verified == true));
+        request.auth.token.email == "saber.gd.fl@gmail.com" &&
+        request.auth.token.email_verified == true;
+    }
+
+    // Keep legacy active profiles working when they predate allowed_users, while
+    // making an explicit inactive allow-list record revoke access immediately.
+    function isActiveUser() {
+      return isSuperAdminIdentity() ||
+        (isAuthenticated() &&
+          request.auth.token.email is string &&
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true &&
+          (!exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)) ||
+            get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email)).data.isActive == true));
+    }
+
+    function isAdmin() {
+      return isSuperAdminIdentity() ||
+        (isActiveUser() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
     function isSupervisor() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'supervisor';
+      return isActiveUser() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'supervisor';
     }
 
     function isManager() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+      return isActiveUser() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+    }
+
+    function isTrainingTeamLeader() {
+      return isActiveUser() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'training_team_leader';
     }
 
     function isPrivileged() {
       return isAdmin() || isSupervisor() || isManager();
     }
 
-    function hasRequiredFields(fields) {
-      return request.resource.data.keys().hasAll(fields);
+    function canManageBookings() {
+      return isPrivileged() || isTrainingTeamLeader();
     }
 
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
     }
 
     function isValidEmail(email) {
@@ -117,89 +138,93 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser() || isOwner(userId);
       allow create: if isAuthenticated() && isValidUser(request.resource.data) &&
                     (
                       isAdmin() ||
                       (isOwner(userId) && invitedRoleMatches(request.resource.data.email, request.resource.data.role))
                     );
-      allow update: if isAuthenticated() && isValidUser(request.resource.data) &&
-                    (isOwner(userId) || isAdmin()) &&
-                    (request.resource.data.role == resource.data.role || isAdmin());
+      allow update: if isValidUser(request.resource.data) &&
+                    (isAdmin() ||
+                      (isOwner(userId) && isActiveUser() &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'lastLoginAt'])));
     }
 
     match /allowed_users/{email} {
-      allow read: if isAuthenticated();
+      allow get: if isAuthenticated() &&
+                 (isAdmin() || request.auth.token.email == email);
+      allow list: if isAdmin();
       allow write: if isAdmin();
     }
 
     match /settings/{settingId} {
       // settings/permissions holds the whole role-permission matrix - no reason
       // for it to be readable by a logged-out visitor.
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
       allow write: if isAdmin() || isSupervisor();
     }
 
     match /customers/{customerId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidCustomer(request.resource.data);
-      allow update: if isAuthenticated() && isValidCustomer(request.resource.data);
+      allow read: if isActiveUser();
+      allow create: if canManageBookings() && isValidCustomer(request.resource.data);
+      allow update: if canManageBookings() && isValidCustomer(request.resource.data);
       allow delete: if isAdmin();
     }
 
     match /bookings/{bookingId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && hasRequiredFields(['customerId', 'productId', 'productType', 'status']);
-      allow update: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow create: if canManageBookings() && hasRequiredFields(['customerId', 'productId', 'productType', 'status']);
+      allow update: if canManageBookings();
       allow delete: if isAdmin();
     }
 
     match /installment_plans/{bookingId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow write: if canManageBookings();
     }
 
     match /payments/{paymentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow create: if canManageBookings();
+      allow update: if isPrivileged();
       allow delete: if isAdmin();
     }
 
     match /refunds/{refundId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow create: if isPrivileged();
+      allow update: if isPrivileged();
       allow delete: if isAdmin();
     }
 
     match /activity_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow create: if isActiveUser();
+      allow update: if false;
       allow delete: if false;
     }
 
     match /booking_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow create: if isActiveUser();
+      allow update: if isAdmin() &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['details']);
       allow delete: if false;
     }
 
     match /groups/{groupId} {
-      allow read: if isAuthenticated();
-      allow write: if isPrivileged();
+      allow read: if isActiveUser();
+      allow write: if canManageBookings();
     }
 
     match /catalog_courses/{courseId} {
       allow read: if true;
-      allow write: if isPrivileged();
+      allow write: if canManageBookings();
     }
 
     match /catalog_diplomas/{diplomaId} {
       allow read: if true;
-      allow write: if isPrivileged();
+      allow write: if canManageBookings();
     }
 
     match /catalog_categories/{categoryId} {
@@ -208,50 +233,92 @@ service cloud.firestore {
     }
 
     match /stats/{statId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow write: if canManageBookings();
     }
 
     match /_connection_test_/{docId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
     }
 
     match /offers/{offerId} {
-      allow read: if isAuthenticated();
-      allow write: if isPrivileged();
+      allow read: if isActiveUser();
+      allow write: if canManageBookings();
     }
 
     match /promo_codes/{codeId} {
-      allow read: if isAuthenticated();
-      allow create: if isAdmin() || isSupervisor();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin() || isSupervisor();
+      allow read: if isActiveUser();
+      allow create, update, delete: if canManageBookings();
     }
 
     match /branches/{branchId} {
-      allow read: if isAuthenticated();
-      allow write: if isPrivileged();
+      allow read: if isActiveUser();
+      allow write: if canManageBookings();
     }
 
     match /sales_staff/{staffId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
       allow write: if isPrivileged();
     }
     function isValidComplaint(data) {
       return data.customerId is string && data.subject is string;
     }
 
+    function isValidBookingFormSubmission(data) {
+      return data.keys().hasOnly([
+               'formId', 'customerName', 'phone', 'countryCode', 'whatsapp',
+               'email', 'englishName', 'productId', 'productName', 'productType',
+               'studiedSoftware', 'attendanceMethod', 'paidAmount',
+               'transferSenderNumber', 'paymentMethod', 'termsAgreed',
+               'additionalAnswers', 'submittedAt', 'status', 'isDeleted',
+               'isScholarship', 'formType', 'scholarshipReason',
+               'installmentPlan', 'installmentPlanNotes'
+             ]) &&
+             data.keys().hasAll([
+               'formId', 'customerName', 'phone', 'countryCode', 'whatsapp',
+               'englishName', 'productName', 'studiedSoftware',
+               'attendanceMethod', 'paidAmount', 'transferSenderNumber',
+               'paymentMethod', 'termsAgreed', 'submittedAt', 'status', 'isDeleted'
+             ]) &&
+             data.formId is string && data.formId.size() > 0 && data.formId.size() <= 100 &&
+             data.customerName is string && data.customerName.size() > 0 && data.customerName.size() <= 160 &&
+             data.phone is string && data.phone.size() <= 32 &&
+             data.countryCode is string && data.countryCode.size() <= 8 &&
+             data.whatsapp is string && data.whatsapp.size() > 0 && data.whatsapp.size() <= 32 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 320)) &&
+             data.englishName is string && data.englishName.size() <= 160 &&
+             data.productName is string && data.productName.size() <= 200 &&
+             data.studiedSoftware in ['yes', 'no'] &&
+             data.attendanceMethod in ['online', 'offline_hq'] &&
+             data.paidAmount is number && data.paidAmount >= 0 && data.paidAmount <= 1000000 &&
+             data.transferSenderNumber is string && data.transferSenderNumber.size() <= 64 &&
+             data.paymentMethod is string && data.paymentMethod.size() <= 80 &&
+             data.termsAgreed == true &&
+             data.submittedAt is string && data.submittedAt.size() <= 64 &&
+             data.status == 'new' && data.isDeleted == false &&
+             (!('additionalAnswers' in data) || (data.additionalAnswers is map && data.additionalAnswers.size() <= 40));
+    }
+
+    function isValidEventFormSubmission(data) {
+      return data.keys().hasOnly(['formId', 'answers', 'submittedAt', 'isDeleted']) &&
+             data.keys().hasAll(['formId', 'answers', 'submittedAt']) &&
+             data.formId is string && data.formId.size() > 0 && data.formId.size() <= 100 &&
+             data.answers is map && data.answers.size() > 0 && data.answers.size() <= 40 &&
+             data.submittedAt is string && data.submittedAt.size() <= 64 &&
+             (!('isDeleted' in data) || data.isDeleted == false);
+    }
+
     match /complaints/{complaintId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidComplaint(request.resource.data);
-      allow update: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow create: if isActiveUser() && isValidComplaint(request.resource.data);
+      allow update: if isActiveUser();
       allow delete: if isAdmin();
     }
 
     match /customer_notes/{noteId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow create: if isActiveUser();
+      allow update: if isActiveUser();
       allow delete: if isAdmin();
     }
 
@@ -260,55 +327,56 @@ service cloud.firestore {
     // ===============================================================
 
     match /subscriptionTypes/{typeId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
       allow write: if isPrivileged();
     }
 
     match /paymentMethods/{methodId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
       allow write: if isPrivileged();
     }
 
     match /subscriptionAccounts/{accountId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
       allow write: if isPrivileged();
     }
 
     match /preRegisteredAccounts/{accountId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
       allow write: if isPrivileged();
     }
 
     match /customerSubscriptions/{subId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow create: if isPrivileged();
+      allow update: if isPrivileged();
       allow delete: if isAdmin();
     }
 
     match /programSubscriptionExpenses/{expenseId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
       allow write: if isPrivileged();
     }
 
     match /programSubscriptionRevenues/{revenueId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow write: if isPrivileged();
     }
 
     match /auditLogs/{logId} {
       allow read: if isAdmin() || isSupervisor();
-      allow create: if isAuthenticated();
+      allow create: if isPrivileged();
       allow update, delete: if false;
     }
 
     match /subscriptionSettings/{settingId} {
-      allow read: if isAuthenticated();
+      allow read: if isActiveUser();
       allow write: if isAdmin() || isSupervisor();
     }
 
     match /subscriptionAlerts/{alertId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isActiveUser();
+      allow write: if isPrivileged();
     }
 
     // Booking confirmation portal forms & submissions.
@@ -317,13 +385,13 @@ service cloud.firestore {
     // every form in the collection.
     match /booking_forms/{formId} {
       allow get: if true;
-      allow list: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow list: if isActiveUser();
+      allow write: if isActiveUser();
     }
 
     match /booking_form_submissions/{subId} {
-      allow create: if true;
-      allow read, update, delete: if isAuthenticated();
+      allow create: if isValidBookingFormSubmission(request.resource.data);
+      allow read, update, delete: if isActiveUser();
     }
 
     // Same get/list split as booking_forms above - a visitor with a share
@@ -331,13 +399,13 @@ service cloud.firestore {
     // discover every event you've ever created (including closed ones).
     match /event_forms/{formId} {
       allow get: if true;
-      allow list: if isAuthenticated();
-      allow write: if isAuthenticated();
+      allow list: if isActiveUser();
+      allow write: if isActiveUser();
     }
 
     match /event_form_submissions/{subId} {
-      allow create: if true;
-      allow read, update, delete: if isAuthenticated();
+      allow create: if isValidEventFormSubmission(request.resource.data);
+      allow read, update, delete: if isActiveUser();
     }
   }
 }
