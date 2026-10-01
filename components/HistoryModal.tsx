@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Booking, BookingLog, Customer, UserProfile } from '../types';
 import { getBookingLogs, genericGet, rollbackBookingAction } from '../services/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { escapeHtml } from '../utils/html';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -196,11 +197,13 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, booking, c
     if (!booking || logs.length === 0) return;
     const w = window.open('', '_blank');
     if (!w) return;
+    const safeCustomerName = escapeHtml(customerName);
+    const safeBookingId = escapeHtml(booking.id);
 
     const html = `
       <html dir="rtl">
         <head>
-          <title>سجل حركات العميل - ${customerName}</title>
+          <title>سجل حركات العميل - ${safeCustomerName}</title>
           <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #1f2937; line-height: 1.6; direction: rtl; }
             .header { border-bottom: 3px solid #4f46e5; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
@@ -231,9 +234,9 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, booking, c
           
           <div class="customer-info">
             <div style="font-size: 11px; font-weight: 800; color: #6b7280;">اسم العميل</div>
-            <div style="font-size: 20px; font-weight: bold; color: #111827; margin-bottom: 8px;">${customerName}</div>
+            <div style="font-size: 20px; font-weight: bold; color: #111827; margin-bottom: 8px;">${safeCustomerName}</div>
             <div style="font-size: 11px; font-weight: 800; color: #6b7280;">رقم الحجز (Booking ID)</div>
-            <div style="font-size: 13px; font-family: monospace; color: #4b5563;">${booking.id}</div>
+            <div style="font-size: 13px; font-family: monospace; color: #4b5563;">${safeBookingId}</div>
           </div>
 
           <div class="logs">
@@ -241,19 +244,19 @@ const HistoryModal: React.FC<HistoryModalProps> = ({ isOpen, onClose, booking, c
               <div class="log-item">
                 <div class="log-header">
                   <div>
-                    <span class="action-tag">${getActionLabel(log.action)} (${log.action})</span>
+                    <span class="action-tag">${escapeHtml(getActionLabel(log.action))} (${escapeHtml(log.action)})</span>
                     ${log.details?.isReversed ? `<span class="reversed-badge">[تم التراجع عن هذه الحركة]</span>` : ''}
                   </div>
                   <span class="timestamp">${new Date(log.timestamp).toLocaleString('ar-EG')}</span>
                 </div>
-                <div class="description" style="${log.details?.isReversed ? 'text-decoration: line-through; color: #9ca3af;' : ''}">${log.description}</div>
-                <div class="performed-by">بواسطة: ${resolvePerformer(log.performedBy)} ${log.performedByEmail ? `(${log.performedByEmail})` : ''}</div>
+                <div class="description" style="${log.details?.isReversed ? 'text-decoration: line-through; color: #9ca3af;' : ''}">${escapeHtml(log.description)}</div>
+                <div class="performed-by">بواسطة: ${escapeHtml(resolvePerformer(log.performedBy))} ${log.performedByEmail ? `(${escapeHtml(log.performedByEmail)})` : ''}</div>
                 ${log.details ? `
                   <div class="details">
                     ${log.details.amount ? `<div>المبلغ: ${log.details.amount} ج.م</div>` : ''}
                     ${log.details.refundAmount ? `<div>مبلغ الاسترداد: ${log.details.refundAmount} ج.م</div>` : ''}
                     ${log.details.paymentSummary ? `<div>المدفوع: ${log.details.paymentSummary.paidTotal} ج.م | المتبقي: ${log.details.paymentSummary.remaining} ج.م</div>` : ''}
-                    ${log.details.reason ? `<div>السبب: ${log.details.reason}</div>` : ''}
+                    ${log.details.reason ? `<div>السبب: ${escapeHtml(log.details.reason)}</div>` : ''}
                     ${log.details.isReversed ? `<div style="color: #dc2626; font-weight: bold; margin-top: 4px;">تم التراجع عن هذه الحركة في: ${new Date(log.details.reversedAt).toLocaleString('ar-EG')}</div>` : ''}
                   </div>
                 ` : ''}

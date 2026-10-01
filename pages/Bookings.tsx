@@ -38,6 +38,7 @@ import { where } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 import { smartCleanPhone } from './ConfirmBookingPortal';
 import { CrmLookupResult, lookupCrmClient, syncBookingToCrm } from '../services/crmIntegration';
+import { escapeHtml } from '../utils/html';
 
 export const cleanLocalPhone = (raw: string, defaultDialCode: string = '+20') => {
   if (!raw) return { cleanLocal: '', countryCode: defaultDialCode, nationality: (defaultDialCode === '+20' ? 'egyptian' : 'other') as 'egyptian' | 'other' };
@@ -1710,9 +1711,9 @@ const Bookings: React.FC = () => {
                 <span>بيانات العميل</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: #333;">
-                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">الاسم :</span> <span style="font-weight: 800;">${cust?.name}</span></div>
-                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">رقم الهاتف :</span> <span style="font-weight: 800; direction: ltr;">${cust?.countryCode} ${cust?.whatsapp}</span></div>
-                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">البريد الإلكتروني :</span> <span style="font-weight: 800;">${cust?.email || '-'}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">الاسم :</span> <span style="font-weight: 800;">${escapeHtml(cust?.name || '-')}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">رقم الهاتف :</span> <span style="font-weight: 800; direction: ltr;">${escapeHtml(cust?.countryCode || '')} ${escapeHtml(cust?.whatsapp || '')}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #999; width: 80px;">البريد الإلكتروني :</span> <span style="font-weight: 800;">${escapeHtml(cust?.email || '-')}</span></div>
               </div>
             </div>
             <!-- Course Info (Left) -->
@@ -1722,8 +1723,8 @@ const Bookings: React.FC = () => {
                 <span>بيانات الدورة</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: #333;">
-                <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 80px;">اسم الدورة :</span> <span style="font-weight: 800;">${prod?.name || 'غير محدد'} ${prod?.type === 'diploma' ? '(دبلومة)' : '(كورس)'}</span></div>
-                <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 80px;">الفرع / الموقع :</span> <span style="font-weight: 800; color: #1e40af;">${branchName}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 80px;">اسم الدورة :</span> <span style="font-weight: 800;">${escapeHtml(prod?.name || 'غير محدد')} ${prod?.type === 'diploma' ? '(دبلومة)' : '(كورس)'}</span></div>
+                <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 80px;">الفرع / الموقع :</span> <span style="font-weight: 800; color: #1e40af;">${escapeHtml(branchName)}</span></div>
                 <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 80px;">المجموعة :</span> <span style="font-weight: 800;">${
                   grp ? (() => {
                     const label = grp.scheduleLabel || '';
@@ -1731,7 +1732,7 @@ const Bookings: React.FC = () => {
                     const days = parts[0] || '';
                     const time = parts[1] || '';
                     const codeLabel = grp.groupCode ? `[${grp.groupCode}] ` : '';
-                    return `${codeLabel}${days} — ${grp.startDate} — ${time}`;
+                    return escapeHtml(`${codeLabel}${days} — ${grp.startDate} — ${time}`);
                   })() : 'حجز مؤجل'
                 }</span></div>
                 <div style="display: flex; gap: 10px;"><span style="color: #FF7A00; width: 80px;">تاريخ البداية :</span> <span style="font-weight: 800; direction: ltr;">${grp?.startDate || 'سيحدد لاحقاً'}</span></div>
@@ -1798,21 +1799,21 @@ const Bookings: React.FC = () => {
               
               ${booking.pricing.appliedOffer?.isApplied ? `
               <div style="display: flex; justify-content: space-between; color: #059669; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
-                <span style="font-weight: 700;">العرض المطبق (${booking.pricing.appliedOffer.offerReason}):</span>
+                <span style="font-weight: 700;">العرض المطبق (${escapeHtml(booking.pricing.appliedOffer.offerReason)}):</span>
                 <span style="font-weight: 900;">- ${(booking.pricing.basePriceSnapshot - (booking.pricing.appliedOffer.offerPrice || 0)).toLocaleString()} EGP</span>
               </div>
               ` : ''}
               
               ${booking.pricing.extraDiscountSnapshot > 0 ? `
               <div style="display: flex; justify-content: space-between; color: #059669; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
-                <span style="font-weight: 700;">خصم إضافي (${booking.pricing.extraDiscountReason}):</span>
+                <span style="font-weight: 700;">خصم إضافي (${escapeHtml(booking.pricing.extraDiscountReason)}):</span>
                 <span style="font-weight: 900;">- ${booking.pricing.extraDiscountSnapshot.toLocaleString()} EGP</span>
               </div>
               ` : ''}
 
               ${booking.pricing.appliedPromoCode ? `
               <div style="display: flex; justify-content: space-between; color: #4f46e5; padding-bottom: 8px; border-bottom: 1px dashed #eee;">
-                <span style="font-weight: 700;">كود الخصم المطبق (${booking.pricing.appliedPromoCode.code}):</span>
+                <span style="font-weight: 700;">كود الخصم المطبق (${escapeHtml(booking.pricing.appliedPromoCode.code)}):</span>
                 <span style="font-weight: 900;">- ${booking.pricing.appliedPromoCode.discountAmount.toLocaleString()} EGP</span>
               </div>
               ` : ''}
@@ -2018,7 +2019,7 @@ const Bookings: React.FC = () => {
                     ${hasPartialPaid ? `<div style="font-size: 10px; color: #0369a1; font-weight: 800; margin-top: 4px;">تم سداد ${(inst.paidAmount || 0).toLocaleString()} EGP منه بالفعل</div>` : ''}
                   </td>
                   <td style="padding: 12px; text-align: center; font-size: 11px; color: #666;">
-                    ${idx === 0 ? 'استكمال 50%' : idx === plan.installments.length - 1 ? 'القسط الأخير' : inst.label || '-'}
+                    ${idx === 0 ? 'استكمال 50%' : idx === plan.installments.length - 1 ? 'القسط الأخير' : escapeHtml(inst.label || '-')}
                   </td>
                 </tr>
               `}).join('') : `

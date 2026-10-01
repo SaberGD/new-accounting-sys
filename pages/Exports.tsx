@@ -217,10 +217,17 @@ const Exports: React.FC = () => {
     setLoading('backup');
     const zip = new JSZip();
     const collections = [
-        'allowed_users', 'catalog_courses', 'catalog_diplomas', 'offers', 
-        'branches', 'groups', 'customers', 'bookings', 'payments', 
-        'refunds', 'installment_plans', 'sales_staff', 'users',
-        'activity_logs', 'booking_logs', 'settings'
+        'allowed_users', 'users', 'settings', 'stats',
+        'catalog_courses', 'catalog_diplomas', 'offers', 'promo_codes',
+        'branches', 'groups', 'sales_staff', 'customers', 'customer_notes',
+        'bookings', 'payments', 'refunds', 'installment_plans',
+        'activity_logs', 'booking_logs', 'complaints',
+        'booking_forms', 'booking_form_submissions',
+        'event_forms', 'event_form_submissions',
+        'subscriptionTypes', 'paymentMethods', 'subscriptionAccounts',
+        'preRegisteredAccounts', 'customerSubscriptions',
+        'programSubscriptionExpenses', 'programSubscriptionRevenues',
+        'auditLogs', 'subscriptionSettings', 'subscriptionAlerts'
     ];
     
     try {
@@ -238,7 +245,8 @@ const Exports: React.FC = () => {
       }
 
       zip.file('SYSTEM_RESTORE_DATA_DO_NOT_EDIT.json', JSON.stringify({
-          version: "1.0",
+          version: "2.0",
+          projectId: "crm---acounting-sg",
           timestamp: new Date().toISOString(),
           data: rawSystemData
       }));
@@ -289,6 +297,9 @@ const Exports: React.FC = () => {
           
           const jsonString = await restoreFile.async('string');
           const backupObj = JSON.parse(jsonString);
+          if (backupObj.projectId && backupObj.projectId !== 'crm---acounting-sg') {
+              throw new Error("This backup belongs to a different system.");
+          }
           const dataToRestore = backupObj.data;
 
           if (!dataToRestore) throw new Error("Invalid backup structure.");

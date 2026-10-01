@@ -147,8 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           let isAllowed = isSuperAdmin || (allowedDoc.exists() && allowedDoc.data()?.isActive);
           let allowedData = allowedDoc.exists() ? (allowedDoc.data() as AllowedUser) : null;
 
-          // If not in allowed_users, check if they already have a profile in 'users' (for existing users)
-          if (!isAllowed) {
+          // Legacy profiles may predate allowed_users. Only use that fallback when
+          // no invitation record exists; an explicitly disabled invitation must win.
+          if (!isAllowed && !allowedDoc.exists()) {
             const usersQuery = query(collection(db, 'users'), where('email', '==', emailLower), limit(1));
             const usersSnap = await getDocs(usersQuery);
             if (!usersSnap.empty) {

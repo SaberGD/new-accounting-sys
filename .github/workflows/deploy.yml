@@ -26,6 +26,19 @@ jobs:
       - name: Build project
         run: npm run build
 
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy Firestore security rules when configured
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          if [ -z "$FIREBASE_TOKEN" ]; then
+            echo "::warning::FIREBASE_TOKEN is missing; skipping Firestore rules deploy."
+            exit 0
+          fi
+          firebase deploy --only firestore:rules --force --project crm---acounting-sg
+
       - name: Deploy dist to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
