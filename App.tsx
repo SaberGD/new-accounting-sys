@@ -38,6 +38,7 @@ import BookingForms from './pages/BookingForms';
 import EventForms from './pages/EventForms';
 import EventFormPublic from './pages/EventFormPublic';
 import Landing from './pages/Landing';
+import ChangePassword from './pages/ChangePassword';
 import BrandedLoader from './components/BrandedLoader';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, permission?: PermissionKey }> = ({ children, permission }) => {
@@ -52,6 +53,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode, permission?: Permiss
   }
 
   if (!userProfile) return <Navigate to="/landing" replace />;
+
+  // Admin reset this user's password to the default - block everything until they set a new one.
+  if (userProfile.mustChangePassword) return <ChangePassword />;
 
   // Dynamic Permission Check
   if (permission && !hasPermission(permission)) {

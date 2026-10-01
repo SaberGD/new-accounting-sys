@@ -6,11 +6,14 @@ import { genericGet, upsertDoc, genericDelete } from '../services/firestore';
 import { AllowedUser, UserProfile } from '../types';
 import DeleteModal from '../components/DeleteModal';
 import { serverTimestamp } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../firebase';
 
 const Users: React.FC = () => {
   const { t } = useTheme();
-  const { effectiveProfile, hasPermission } = useAuth();
+  const { effectiveProfile, hasPermission, userProfile: realProfile } = useAuth();
   const userProfile = effectiveProfile;
+  const canResetPasswords = realProfile?.role === 'admin';
   const [allowedUsers, setAllowedUsers] = useState<AllowedUser[]>([]);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +28,9 @@ const Users: React.FC = () => {
   const [deleteName, setDeleteName] = useState('');
 
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const [resetTarget, setResetTarget] = useState<UserProfile | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -155,6 +161,25 @@ const Users: React.FC = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!resetTarget) return;
+    setIsResetting(true);
+    setStatusMsg(null);
+    try {
+      const resetFn = httpsCallable(functions, 'adminResetPassword');
+      await resetFn({ email: resetTarget.email });
+      setStatusMsg({ type: 'success', text: `Password for ${resetTarget.displayName} was reset to 123456. They will be asked to set a new one on next login.` });
+      setResetTarget(null);
+      fetchData();
+    } catch (err: any) {
+      console.error("Password reset error:", err);
+      setStatusMsg({ type: 'error', text: `Failed to reset password: ${err.message || 'Unknown error'}` });
+      setResetTarget(null);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (!hasPermission('manageUsers')) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -241,6 +266,9 @@ const Users: React.FC = () => {
                     <p className="font-bold">{p.displayName}</p>
                     <p className="text-[10px] text-gray-400 font-mono">UID: {p.uid.substring(0, 8)}...</p>
                     <p className="text-[10px] text-gray-400 font-medium">{p.email}</p>
+                    {p.mustChangePassword && (
+                      <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded mt-1 inline-block bg-amber-100 text-amber-700">Password reset pending</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -256,6 +284,17 @@ const Users: React.FC = () => {
                     <option value="training_team_leader">Training TL</option>
                     <option value="sales">Sales</option>
                   </select>
+                  {canResetPasswords && p.uid !== realProfile?.uid && (
+                    <button
+                      onClick={() => { setResetTarget(p); setStatusMsg(null); }}
+                      disabled={isSaving || isResetting}
+                      title="Reset password to 123456"
+                      className="flex flex-col items-center text-amber-500 hover:text-amber-700 transition-colors disabled:opacity-50"
+                    >
+                      <span className="text-[7px] font-black uppercase mb-1">Reset PW</span>
+                      <i className="fas fa-key"></i>
+                    </button>
+                  )}
                   <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold uppercase">Online</span>
                 </div>
               </div>
@@ -341,6 +380,33 @@ const Users: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {resetTarget && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl w-full max-w-md mt-24">
+            <h2 className="text-xl font-bold mb-4"><i className="fas fa-key text-amber-500 mr-2 rtl:ml-2"></i> Reset Password</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+              Reset the password of <span className="font-bold">{resetTarget.displayName}</span> ({resetTarget.email}) to <span className="font-mono font-bold">123456</span>?
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+              They will be signed out and must choose a new password the next time they log in.
+              <br />
+              هيتم تحويل الباسوورد لـ 123456 وهيطلب منه يعمل باسوورد جديد أول ما يدخل.
+            </p>
+            <div className="flex justify-end space-x-3 rtl:space-x-reverse pt-4 border-t dark:border-gray-700">
+              <button type="button" disabled={isResetting} onClick={() => setResetTarget(null)} className="px-6 py-2 font-bold text-gray-400 uppercase text-xs tracking-widest">Cancel</button>
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={handleResetPassword}
+                className="px-8 py-3 bg-amber-500 text-white rounded-xl font-black shadow-lg shadow-amber-500/20 flex items-center"
+              >
+                {isResetting ? <><i className="fas fa-spinner fa-spin mr-2"></i> RESETTING...</> : 'RESET PASSWORD'}
+              </button>
+            </div>
           </div>
         </div>
       )}

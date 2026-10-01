@@ -12,6 +12,7 @@ interface AuthContextType {
   authError: string | null;
   gateStatus: 'idle' | 'checking' | 'allowed' | 'denied' | 'error';
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   setAuthError: (error: string | null) => void;
   // Impersonation
   impersonatedRole: Role | null;
@@ -214,6 +215,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => signOut(auth);
 
+  const refreshProfile = async () => {
+    if (!currentUser) return;
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
+    if (snap.exists()) setUserProfile(snap.data() as UserProfile);
+  };
+
   const effectiveRole = (userProfile?.role === 'admin' && impersonatedRole) 
     ? impersonatedRole 
     : userProfile?.role;
@@ -240,6 +247,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authError, 
       gateStatus,
       logout, 
+      refreshProfile,
       setAuthError,
       impersonatedRole,
       setImpersonatedRole,

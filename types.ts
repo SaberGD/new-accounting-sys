@@ -64,6 +64,10 @@ export interface UserProfile {
   isActive: boolean;
   lastLoginAt?: any;
   createdAt: any;
+  // Set by the adminResetPassword Cloud Function; forces a password change on next login.
+  mustChangePassword?: boolean;
+  passwordResetAt?: any;
+  passwordResetBy?: string;
 }
 
 export interface AllowedUser {
