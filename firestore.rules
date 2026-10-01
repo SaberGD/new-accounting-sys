@@ -147,7 +147,10 @@ service cloud.firestore {
       allow update: if isValidUser(request.resource.data) &&
                     (isAdmin() ||
                       (isOwner(userId) && isActiveUser() &&
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'lastLoginAt'])));
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'lastLoginAt', 'mustChangePassword']) &&
+                        // The owner may only clear the admin-reset flag (after choosing a new password), never set it.
+                        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['mustChangePassword']) ||
+                          request.resource.data.mustChangePassword == false)));
     }
 
     match /allowed_users/{email} {
@@ -228,8 +231,8 @@ service cloud.firestore {
     }
 
     match /catalog_categories/{categoryId} {
-      allow read: if isAuthenticated();
-      allow write: if isPrivileged();
+      allow read: if isActiveUser();
+      allow write: if canManageBookings();
     }
 
     match /stats/{statId} {
