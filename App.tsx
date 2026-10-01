@@ -38,24 +38,13 @@ import BookingForms from './pages/BookingForms';
 import EventForms from './pages/EventForms';
 import EventFormPublic from './pages/EventFormPublic';
 import Landing from './pages/Landing';
+import BrandedLoader from './components/BrandedLoader';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode, permission?: PermissionKey }> = ({ children, permission }) => {
   const { currentUser, userProfile, loading, gateStatus, hasPermission, isAuthReady } = useAuth();
 
   if (!isAuthReady || (currentUser && !userProfile && gateStatus === 'checking')) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-             <div className="w-2 h-2 bg-primary-600 rounded-full animate-ping"></div>
-          </div>
-        </div>
-        <p className="mt-6 text-gray-600 dark:text-gray-400 font-bold tracking-widest text-xs uppercase animate-pulse">
-          {gateStatus === 'checking' ? 'Verifying Access...' : 'Syncing SGCA...'}
-        </p>
-      </div>
-    );
+    return <BrandedLoader status={gateStatus === 'checking' ? 'Verifying secure access' : 'Syncing Saber Group data'} />;
   }
 
   if (!currentUser || gateStatus === 'denied' || gateStatus === 'error') {

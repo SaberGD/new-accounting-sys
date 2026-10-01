@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark" data-color-theme="ember">
 <head>
     <meta charset="UTF-8">
     <script>
@@ -22,6 +22,14 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGCA - Saber Group Courses Academy</title>
+    <script>
+      (() => {
+        const savedTheme = localStorage.getItem('theme');
+        document.documentElement.classList.toggle('dark', savedTheme !== 'light');
+        document.documentElement.setAttribute('data-color-theme', 'ember');
+      })();
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/index.css">
@@ -50,16 +58,16 @@
     </script>
     <style id="theme-variables">
       :root {
-        --primary-50: 240 249 255;
-        --primary-100: 224 242 254;
-        --primary-200: 186 230 253;
-        --primary-300: 125 211 252;
-        --primary-400: 56 189 248;
-        --primary-500: 14 165 233;
-        --primary-600: 2 132 199;
-        --primary-700: 3 105 161;
-        --primary-800: 7 89 133;
-        --primary-900: 12 74 110;
+        --primary-50: 252 245 244;
+        --primary-100: 248 230 228;
+        --primary-200: 240 204 199;
+        --primary-300: 230 169 161;
+        --primary-400: 218 128 116;
+        --primary-500: 207 87 71;
+        --primary-600: 196 50 31;
+        --primary-700: 161 41 25;
+        --primary-800: 129 33 20;
+        --primary-900: 102 26 16;
       }
 
       /* Transitions for smooth theme switching */

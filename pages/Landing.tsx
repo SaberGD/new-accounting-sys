@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const Landing: React.FC = () => {
-  const { theme, toggleTheme, lang, setLanguage } = useTheme();
+  const { theme, setTheme, lang, setLanguage } = useTheme();
   const { currentUser, userProfile, gateStatus } = useAuth();
   const navigate = useNavigate();
 
@@ -16,30 +16,16 @@ const Landing: React.FC = () => {
   const isAr = lang === 'ar';
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0b0f19] text-slate-100' : 'bg-slate-50 text-slate-900'} font-sans relative selection:bg-primary-500 selection:text-white`}>
+    <div className={`sg-accounting-landing min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-[#0b0f19] text-slate-100' : 'bg-slate-50 text-slate-900'} font-sans relative selection:bg-primary-500 selection:text-white`}>
       
       {/* TOP NAVBAR */}
       <header className={`sticky top-0 z-50 backdrop-blur-xl transition-all duration-200 border-b ${theme === 'dark' ? 'bg-[#0b0f19]/80 border-slate-800/80' : 'bg-white/80 border-slate-200/80'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           
           {/* Logo & Brand */}
-          <Link to="/" className="flex items-center gap-3.5 group">
-            <div className="w-11 h-11 bg-primary-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary-500/20 group-hover:scale-105 transition-transform duration-300">
-              SG
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-lg md:text-xl tracking-tight text-slate-900 dark:text-white">
-                  SABER GROUP
-                </span>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-black bg-primary-500/15 text-primary-600 dark:text-primary-300 border border-primary-500/20">
-                  SYSTEM
-                </span>
-              </div>
-              <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider uppercase">
-                {isAr ? 'نظام الحسابات والإيرادات الموحد' : 'Enterprise Accounting & Revenue System'}
-              </p>
-            </div>
+          <Link to="/" className="sg-accounting-landing-brand group">
+            <img src="/saber-group-logo.png" alt="Saber Group" />
+            <p>{isAr ? 'نظام الحسابات والإيرادات الموحد' : 'FINANCIAL OPERATIONS SYSTEM'}</p>
           </Link>
 
           {/* Center Navigation Links (Hidden on small screens) */}
@@ -75,18 +61,14 @@ const Landing: React.FC = () => {
               <span>{isAr ? 'English' : 'عربي'}</span>
             </button>
 
-            {/* Dark / Light Theme Switcher */}
-            <button
-              onClick={toggleTheme}
-              className={`p-2.5 rounded-xl transition-all border ${
-                theme === 'dark' 
-                  ? 'bg-slate-800/80 hover:bg-slate-700 text-amber-400 border-slate-700' 
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-              }`}
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              <i className={`fas ${theme === 'dark' ? 'fa-sun' : 'fa-moon'} text-sm`}></i>
-            </button>
+            <div className="sg-accounting-theme-switch" role="group" aria-label={isAr ? 'اختيار المظهر' : 'Choose theme'}>
+              <button type="button" className={theme === 'light' ? 'is-active' : ''} onClick={() => setTheme('light')} title={isAr ? 'الوضع الفاتح' : 'Light mode'} aria-label={isAr ? 'الوضع الفاتح' : 'Light mode'} aria-pressed={theme === 'light'}>
+                <i className="fas fa-sun"></i>
+              </button>
+              <button type="button" className={theme === 'dark' ? 'is-active' : ''} onClick={() => setTheme('dark')} title={isAr ? 'الوضع الداكن' : 'Dark mode'} aria-label={isAr ? 'الوضع الداكن' : 'Dark mode'} aria-pressed={theme === 'dark'}>
+                <i className="fas fa-moon"></i>
+              </button>
+            </div>
 
             {/* Login / Dashboard Button */}
             {isLoggedIn ? (

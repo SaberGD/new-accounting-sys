@@ -1,24 +1,24 @@
-/* Professional UI refresh layer. Presentation-only, no app logic changes. */
+/* Saber Group shared visual system. Presentation-only, no accounting logic changes. */
 :root {
-  color-scheme: light dark;
-  --sg-bg: #f6f8fb;
-  --sg-bg-dark: #070b12;
+  color-scheme: light;
+  --sg-bg: #f4f1ee;
+  --sg-bg-dark: #070707;
   --sg-surface: #ffffff;
-  --sg-surface-dark: #111827;
-  --sg-border: #dbe3ee;
-  --sg-border-dark: #263244;
-  --sg-text: #0f172a;
-  --sg-muted: #64748b;
+  --sg-surface-dark: #131212;
+  --sg-border: rgba(64, 42, 36, 0.13);
+  --sg-border-dark: rgba(255, 255, 255, 0.1);
+  --sg-text: #201c1b;
+  --sg-muted: #77706c;
   --sg-accent: rgb(var(--primary-600));
   --sg-success: #059669;
   --sg-warning: #d97706;
   --sg-danger: #dc2626;
-  --sg-radius-sm: 10px;
-  --sg-radius-md: 14px;
-  --sg-radius-lg: 18px;
-  --sg-radius-xl: 22px;
-  --sg-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
-  --sg-shadow-dark: 0 16px 40px rgba(0, 0, 0, 0.24);
+  --sg-radius-sm: 5px;
+  --sg-radius-md: 7px;
+  --sg-radius-lg: 8px;
+  --sg-radius-xl: 8px;
+  --sg-shadow: 0 18px 46px rgba(64, 38, 30, 0.1);
+  --sg-shadow-dark: 0 22px 55px rgba(0, 0, 0, 0.32);
 }
 
 html {
@@ -26,6 +26,7 @@ html {
 }
 
 html.dark {
+  color-scheme: dark;
   background: var(--sg-bg-dark);
 }
 
@@ -101,7 +102,7 @@ thead th {
 }
 
 aside {
-  box-shadow: 18px 0 40px rgba(15, 23, 42, 0.05);
+  box-shadow: 18px 0 40px rgba(64, 38, 30, 0.06);
 }
 
 html.dark aside {
@@ -161,4 +162,359 @@ html.dark [class*="shadow-2xl"] {
   html.dark body {
     background: var(--sg-bg-dark);
   }
+}
+
+/* Accounting application shell */
+.sg-accounting-shell {
+  position: relative;
+  isolation: isolate;
+  color: var(--sg-text);
+  background:
+    radial-gradient(circle at 82% 4%, rgba(196, 50, 31, 0.09), transparent 31%),
+    linear-gradient(180deg, #faf8f6, var(--sg-bg)) !important;
+}
+
+html.dark .sg-accounting-shell {
+  color: #f6f3f2;
+  background:
+    radial-gradient(circle at 82% 4%, rgba(143, 32, 23, 0.2), transparent 32%),
+    linear-gradient(180deg, #090808, #070707 54%, #0a0707) !important;
+}
+
+.sg-accounting-shell::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(74, 48, 40, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 48, 40, 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, #000, transparent 94%);
+}
+
+html.dark .sg-accounting-shell::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+}
+
+.sg-accounting-sidebar {
+  border-color: var(--sg-border) !important;
+  background: rgba(250, 248, 246, 0.98) !important;
+  box-shadow: 20px 0 54px rgba(64, 38, 30, 0.08) !important;
+}
+
+html.dark .sg-accounting-sidebar {
+  border-color: var(--sg-border-dark) !important;
+  background: rgba(9, 9, 9, 0.98) !important;
+  box-shadow: 22px 0 64px rgba(0, 0, 0, 0.36) !important;
+}
+
+.sg-accounting-brand {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.sg-accounting-brand img {
+  width: 178px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(18%) sepia(77%) saturate(3503%) hue-rotate(353deg) brightness(88%) contrast(94%);
+}
+
+html.dark .sg-accounting-brand img {
+  filter: none;
+}
+
+.sg-accounting-brand span {
+  color: var(--sg-muted);
+  font-family: "Inter", sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.sg-accounting-nav-item {
+  border: 1px solid transparent;
+  border-radius: 5px !important;
+}
+
+.sg-accounting-nav-item:hover {
+  border-color: var(--sg-border) !important;
+  color: var(--sg-text) !important;
+  background: rgba(64, 42, 36, 0.045) !important;
+}
+
+html.dark .sg-accounting-nav-item:hover {
+  border-color: var(--sg-border-dark) !important;
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.sg-accounting-nav-item.is-active {
+  border-color: rgba(207, 87, 71, 0.5) !important;
+  background: linear-gradient(90deg, #9f2919, #c4321f) !important;
+  box-shadow: inset 3px 0 0 #ff8a1f, 0 9px 24px rgba(143, 32, 23, 0.2) !important;
+}
+
+.sg-accounting-header {
+  border-top: 0 !important;
+  border-color: var(--sg-border) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 10px 30px rgba(64, 38, 30, 0.05) !important;
+}
+
+html.dark .sg-accounting-header {
+  border-color: var(--sg-border-dark) !important;
+  background: rgba(10, 9, 9, 0.9) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
+.sg-accounting-content {
+  background: transparent;
+}
+
+.sg-accounting-theme-switch {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--sg-border);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+html.dark .sg-accounting-theme-switch {
+  border-color: var(--sg-border-dark);
+  background: rgba(25, 22, 21, 0.86);
+}
+
+.sg-accounting-theme-switch button {
+  width: 31px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--sg-muted);
+  background: transparent;
+}
+
+.sg-accounting-theme-switch button.is-active {
+  border-color: rgba(207, 87, 71, 0.42);
+  color: #e96913;
+  background: rgba(196, 50, 31, 0.1);
+  box-shadow: 0 4px 14px rgba(143, 32, 23, 0.12);
+}
+
+/* Login */
+.sg-accounting-login {
+  color: var(--sg-text);
+  background:
+    linear-gradient(rgba(74, 48, 40, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 48, 40, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 50% 10%, rgba(196, 50, 31, 0.1), transparent 34%),
+    var(--sg-bg) !important;
+  background-size: 72px 72px, 72px 72px, auto, auto !important;
+}
+
+html.dark .sg-accounting-login {
+  color: #f6f3f2;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    radial-gradient(circle at 50% 10%, rgba(143, 32, 23, 0.22), transparent 34%),
+    #070707 !important;
+  background-size: 72px 72px, 72px 72px, auto, auto !important;
+}
+
+.sg-accounting-login-card {
+  border: 1px solid var(--sg-border);
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+html.dark .sg-accounting-login-card {
+  border-color: var(--sg-border-dark);
+  background: rgba(19, 18, 18, 0.95) !important;
+}
+
+.sg-accounting-login-logo {
+  width: min(100%, 276px);
+  height: auto;
+  display: block;
+  margin: 0 auto 28px;
+  filter: brightness(0) saturate(100%) invert(18%) sepia(77%) saturate(3503%) hue-rotate(353deg) brightness(88%) contrast(94%);
+}
+
+html.dark .sg-accounting-login-logo {
+  filter: none;
+}
+
+/* Public landing */
+.sg-accounting-landing {
+  background:
+    linear-gradient(rgba(74, 48, 40, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(74, 48, 40, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 50% 6%, rgba(196, 50, 31, 0.09), transparent 32%),
+    var(--sg-bg) !important;
+  background-size: 72px 72px, 72px 72px, auto, auto !important;
+}
+
+html.dark .sg-accounting-landing {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    radial-gradient(circle at 50% 6%, rgba(143, 32, 23, 0.2), transparent 32%),
+    #070707 !important;
+  background-size: 72px 72px, 72px 72px, auto, auto !important;
+}
+
+.sg-accounting-landing > header {
+  border-top: 0 !important;
+  border-color: var(--sg-border) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+}
+
+html.dark .sg-accounting-landing > header {
+  border-color: var(--sg-border-dark) !important;
+  background: rgba(9, 9, 9, 0.88) !important;
+}
+
+.sg-accounting-landing-brand {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.sg-accounting-landing-brand img {
+  width: clamp(138px, 16vw, 190px);
+  height: auto;
+  display: block;
+  filter: brightness(0) saturate(100%) invert(18%) sepia(77%) saturate(3503%) hue-rotate(353deg) brightness(88%) contrast(94%);
+}
+
+html.dark .sg-accounting-landing-brand img {
+  filter: none;
+}
+
+.sg-accounting-landing-brand p {
+  margin: 0;
+  color: var(--sg-muted);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+/* Branded bootstrap screen stays dark in both modes. */
+.sg-accounting-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #f6f3f2;
+  background: linear-gradient(125deg, #190504, #070707 48%, #260705);
+}
+
+.sg-accounting-loader-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.66;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+.sg-accounting-loader-content {
+  position: relative;
+  width: min(82vw, 440px);
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.sg-accounting-loader-mark {
+  position: relative;
+  width: min(70vw, 340px);
+  min-height: 142px;
+  display: grid;
+  place-items: center;
+}
+
+.sg-accounting-loader-mark img {
+  position: relative;
+  z-index: 1;
+  width: 82%;
+  height: auto;
+  animation: sg-accounting-logo-breathe 2.2s ease-in-out infinite;
+}
+
+.sg-accounting-loader-orbit {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 138, 31, 0.18);
+  border-radius: 50%;
+  animation: sg-accounting-orbit 3s linear infinite;
+}
+
+.sg-accounting-loader-orbit::after {
+  position: absolute;
+  top: 12%;
+  right: 8%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  content: "";
+  background: #ff8a1f;
+  box-shadow: 0 0 18px #ff8a1f;
+}
+
+.sg-accounting-loader-content p {
+  margin: 0;
+  color: #aaa5a2;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.sg-accounting-loader-line {
+  width: min(74vw, 310px);
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sg-accounting-loader-line span {
+  width: 38%;
+  height: 100%;
+  display: block;
+  background: linear-gradient(90deg, transparent, #ff8a1f, #c4321f, transparent);
+  animation: sg-accounting-scan 1.45s ease-in-out infinite;
+}
+
+.sg-accounting-loader-content small {
+  color: #777174;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@keyframes sg-accounting-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes sg-accounting-logo-breathe {
+  0%, 100% { opacity: 0.82; transform: scale(0.985); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes sg-accounting-scan {
+  from { transform: translateX(-140%); }
+  to { transform: translateX(370%); }
 }

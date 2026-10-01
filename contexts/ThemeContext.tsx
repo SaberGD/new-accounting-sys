@@ -208,6 +208,7 @@ interface ThemeContextType {
   theme: 'light' | 'dark';
   colorTheme: ColorThemeId;
   lang: Language;
+  setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   setColorTheme: (colorTheme: ColorThemeId) => void;
   setLanguage: (lang: Language) => void;
@@ -218,7 +219,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>((localStorage.getItem('theme') as 'light' | 'dark') || 'dark');
-  const [colorTheme, setColorThemeState] = useState<ColorThemeId>((localStorage.getItem('colorTheme') as ColorThemeId) || 'navy');
+  const [colorTheme, setColorThemeState] = useState<ColorThemeId>('ember');
   const [lang, setLang] = useState<Language>((localStorage.getItem('lang') as Language) || 'en');
 
   useEffect(() => {
@@ -228,10 +229,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    themeColor?.setAttribute('content', theme === 'dark' ? '#090707' : '#f4f1ee');
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('colorTheme', colorTheme);
+    localStorage.setItem('colorTheme', 'ember');
     const selected = COLOR_THEMES[colorTheme] || COLOR_THEMES.navy;
     const root = document.documentElement;
     Object.entries(selected.shades).forEach(([shade, value]) => {
@@ -252,7 +256,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const t = (key: keyof typeof translations['en']) => translations[lang][key] || key;
 
   return (
-    <ThemeContext.Provider value={{ theme, colorTheme, toggleTheme, setColorTheme, lang, setLanguage, t }}>
+    <ThemeContext.Provider value={{ theme, colorTheme, setTheme, toggleTheme, setColorTheme, lang, setLanguage, t }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -263,4 +267,3 @@ export const useTheme = () => {
   if (context === undefined) throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };
-

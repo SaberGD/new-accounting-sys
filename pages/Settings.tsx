@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useTheme, COLOR_THEMES, ColorThemeId } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -14,7 +14,7 @@ import {
 } from '../services/firestore';
 
 const Settings: React.FC = () => {
-  const { t, lang, setLanguage, theme, colorTheme, toggleTheme, setColorTheme } = useTheme();
+  const { t, lang, setLanguage, theme, toggleTheme } = useTheme();
   const { effectiveProfile, hasPermission } = useAuth();
   const userProfile = effectiveProfile;
   const navigate = useNavigate();
@@ -117,22 +117,22 @@ const Settings: React.FC = () => {
       <p className="text-gray-500 mb-10">Configure your SGCA experience and manage organization resources.</p>
 
       <div className="space-y-8">
-        {/* Custom Themes & Color Palette Section */}
+        {/* Saber identity has two deliberate display modes. */}
         <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           <div className="p-6 border-b dark:border-gray-700 bg-gray-50/30 dark:bg-gray-700/20 flex items-center justify-between">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <i className="fas fa-palette text-primary-600 text-lg"></i>
               <div>
                 <h3 className="font-bold uppercase text-xs tracking-widest text-gray-500">
-                  {lang === 'ar' ? 'تخصيص ثيمات وألوان الموقع' : 'Themes & Color Customization'}
+                  {lang === 'ar' ? 'مظهر النظام' : 'System Appearance'}
                 </h3>
                 <p className="text-[11px] text-gray-400 font-semibold mt-0.5">
-                  {lang === 'ar' ? 'اختر النمط والألوان المفضلة لديك لكسر الروتين والملل' : 'Choose your favorite color palette & layout style'}
+                  {lang === 'ar' ? 'هوية صابر جروب متاحة بوضع فاتح ووضع داكن' : 'Saber Group identity in light and dark modes'}
                 </p>
               </div>
             </div>
             <span className="text-xs font-black px-3.5 py-1 bg-primary-100 dark:bg-primary-900/60 text-primary-600 rounded-full">
-              8 ثيمات متكاملة للنظام
+              {lang === 'ar' ? 'وضعان' : '2 MODES'}
             </span>
           </div>
 
@@ -156,79 +156,6 @@ const Settings: React.FC = () => {
               </button>
             </div>
 
-            {/* Color Palettes Grid */}
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-                {lang === 'ar' ? 'اختر ثيم ألوان خلفية وواجهة النظام بالكامل:' : 'Select Full System Color Theme:'}
-              </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.values(COLOR_THEMES).map(ct => {
-                  const isSelected = colorTheme === ct.id;
-                  return (
-                    <div
-                      key={ct.id}
-                      onClick={() => setColorTheme(ct.id as ColorThemeId)}
-                      className={`p-5 rounded-2xl cursor-pointer transition-all transform hover:scale-[1.02] border flex flex-col justify-between relative overflow-hidden ${
-                        isSelected 
-                          ? 'bg-gradient-to-br from-primary-50/80 to-primary-100/30 dark:from-primary-950/40 dark:to-gray-900 border-primary-500 shadow-lg ring-2 ring-primary-500/30' 
-                          : 'bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-700/80 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2.5 rtl:space-x-reverse">
-                            <div 
-                              className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-md"
-                              style={{ backgroundColor: ct.primaryHex }}
-                            >
-                              <i className={`fas ${ct.icon}`}></i>
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-sm text-gray-900 dark:text-white">
-                                {lang === 'ar' ? ct.nameAr : ct.nameEn}
-                              </h4>
-                              <span className="text-[10px] text-gray-400 font-bold block">
-                                {lang === 'ar' ? ct.badgeAr : ct.badgeEn}
-                              </span>
-                            </div>
-                          </div>
-
-                          {isSelected && (
-                            <span className="w-6 h-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-xs shadow-md">
-                              <i className="fas fa-check"></i>
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Swatch Strip with System BG preview */}
-                        <div className="flex rounded-xl overflow-hidden h-6 w-full my-3 border border-black/10 dark:border-white/10 p-1 bg-gray-100 dark:bg-gray-800 gap-1">
-                          <div className="flex-1 rounded-md flex items-center justify-center text-[9px] font-black text-white" style={{ backgroundColor: ct.bgPreviewHex }}>
-                            خلفية النظام
-                          </div>
-                          <div className="w-12 rounded-md flex items-center justify-center text-[9px] font-black text-white shadow-sm" style={{ backgroundColor: ct.primaryHex }}>
-                            اللون
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Interactive Button Preview inside Card */}
-                      <div className="pt-2 flex items-center justify-between border-t dark:border-gray-800 text-[11px] font-bold">
-                        <span className={isSelected ? 'text-primary-600 dark:text-primary-400 font-black' : 'text-gray-400'}>
-                          {isSelected ? (lang === 'ar' ? '✓ الثيم المفعل حالياً' : '✓ Active Theme') : (lang === 'ar' ? 'اضغط لتفعيل الثيم' : 'Click to Apply')}
-                        </span>
-                        <div 
-                          className="px-2.5 py-1 rounded-lg text-white text-[10px] font-bold shadow-sm"
-                          style={{ backgroundColor: ct.primaryHex }}
-                        >
-                          معاينة
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
 

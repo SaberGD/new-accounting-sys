@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme, COLOR_THEMES, ColorThemeId } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { Role, PermissionKey, UserProfile } from '../types';
 import { db } from '../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -13,11 +13,9 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { userProfile, logout, hasPermission, setImpersonatedRole, impersonatedRole, setImpersonatedUserId, impersonatedUserId } = useAuth();
-  const { lang, setLanguage, theme, colorTheme, toggleTheme, setColorTheme, t } = useTheme();
+  const { lang, setLanguage, theme, setTheme, t } = useTheme();
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isPaletteOpen, setPaletteOpen] = useState(false);
   const [impersonationModal, setImpersonationModal] = useState<{ role: Role, users: UserProfile[] } | null>(null);
-  const paletteRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
   // Progressive Web App (PWA) Support
@@ -57,18 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   useEffect(() => {
     setSidebarOpen(false);
-    setPaletteOpen(false);
   }, [location.pathname]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (paletteRef.current && !paletteRef.current.contains(event.target as Node)) {
-        setPaletteOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -129,11 +116,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navItems = allNavItems.filter(item => hasPermission(item.permission));
 
-  const activeClass = "flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 rounded-xl bg-primary-600 text-white shadow-lg shadow-primary-500/30 transition-all transform scale-[1.02]";
-  const inactiveClass = "flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all";
+  const activeClass = "sg-accounting-nav-item is-active flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 text-white transition-all";
+  const inactiveClass = "sg-accounting-nav-item flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 text-gray-500 dark:text-gray-400 transition-all";
 
   return (
-    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="sg-accounting-shell min-h-screen flex bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Impersonation User List Modal */}
       {impersonationModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -231,16 +218,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       <aside 
-        className={`fixed inset-y-0 left-0 z-[50] w-64 transform bg-white dark:bg-gray-800 border-r dark:border-gray-700 transition-transform duration-300 ease-in-out lg:translate-x-0 
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-        rtl:left-auto rtl:right-0 rtl:border-l rtl:border-r-0 rtl:lg:translate-x-0 
+        className={`sg-accounting-sidebar fixed inset-y-0 left-0 z-[50] w-64 transform bg-white dark:bg-gray-800 border-r dark:border-gray-700 transition-transform duration-300 ease-in-out lg:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        rtl:left-auto rtl:right-0 rtl:border-l rtl:border-r-0 rtl:lg:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : 'rtl:translate-x-full'}`}
       >
         <div className="h-full flex flex-col px-4 py-6">
           <div className="flex items-center justify-between mb-8 px-2">
-            <div className="flex items-center space-x-3 rtl:space-x-reverse">
-              <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-primary-500/20">SG</div>
-              <span className="text-xl font-bold tracking-tight dark:text-white">SG ACADEMY</span>
+            <div className="sg-accounting-brand">
+              <img src="/saber-group-logo.png" alt="Saber Group" />
+              <span>{lang === 'ar' ? 'النظام المالي' : 'FINANCIAL OS'}</span>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-2 text-gray-400 hover:text-gray-600">
               <i className="fas fa-times"></i>
@@ -303,7 +290,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </aside>
 
       <div className="flex-1 flex flex-col lg:ml-64 rtl:lg:ml-0 rtl:lg:mr-64 min-w-0">
-        <header className="h-16 bg-white/95 dark:bg-gray-800 backdrop-blur-md border-b dark:border-gray-700 flex items-center justify-between px-6 sticky top-0 z-[30] transition-colors duration-300">
+        <header className="sg-accounting-header h-16 bg-white/95 dark:bg-gray-800 backdrop-blur-md border-b dark:border-gray-700 flex items-center justify-between px-6 sticky top-0 z-[30] transition-colors duration-300">
           <div className="flex items-center space-x-4 rtl:space-x-reverse">
             <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
               <i className="fas fa-bars text-xl"></i>
@@ -363,94 +350,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <button onClick={() => setLanguage('ar')} className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${lang === 'ar' ? 'bg-white dark:bg-gray-600 shadow-sm text-primary-600' : 'text-gray-400'}`}>AR</button>
             </div>
 
-            {/* Color Palette Popover Button */}
-            <div className="relative" ref={paletteRef}>
-              <button 
-                onClick={() => setPaletteOpen(!isPaletteOpen)}
-                className={`p-2.5 w-10 h-10 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-all ${isPaletteOpen ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 scale-105 ring-2 ring-primary-500/30' : 'text-primary-600'}`}
-                title="تغيير ثيم ومظهر الموقع (Themes)"
-              >
-                <i className="fas fa-palette text-base"></i>
+            <div className="sg-accounting-theme-switch" role="group" aria-label={lang === 'ar' ? 'اختيار المظهر' : 'Choose theme'}>
+              <button type="button" className={theme === 'light' ? 'is-active' : ''} onClick={() => setTheme('light')} title={lang === 'ar' ? 'الوضع الفاتح' : 'Light mode'} aria-label={lang === 'ar' ? 'الوضع الفاتح' : 'Light mode'} aria-pressed={theme === 'light'}>
+                <i className="fas fa-sun"></i>
               </button>
-
-              {isPaletteOpen && (
-                <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-3 w-80 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border dark:border-gray-700 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="flex items-center justify-between pb-3 mb-3 border-b dark:border-gray-700">
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                      <i className="fas fa-swatchbook text-primary-600"></i>
-                      <span className="font-bold text-xs uppercase tracking-wider dark:text-white">
-                        {lang === 'ar' ? 'ثيمات ومظهر النظام' : 'System Themes'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] bg-primary-100 dark:bg-primary-900/60 text-primary-600 px-2.5 py-0.5 rounded-full font-bold">
-                      8 ثيمات متكاملة
-                    </span>
-                  </div>
-
-                  {/* Mode Toggle inside Popover */}
-                  <div className="mb-4 bg-gray-50 dark:bg-gray-900 p-2.5 rounded-2xl flex items-center justify-between border dark:border-gray-700">
-                    <span className="text-xs font-bold text-gray-700 dark:text-gray-200 px-1">
-                      {lang === 'ar' ? 'نمط النظام (فاتح / داكن)' : 'System Mode (Light/Dark)'}
-                    </span>
-                    <button 
-                      onClick={toggleTheme}
-                      className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-1.5 rounded-xl bg-white dark:bg-gray-800 shadow-sm border dark:border-gray-700 text-xs font-bold text-primary-600 hover:scale-105 transition-all"
-                    >
-                      <i className={`fas ${theme === 'dark' ? 'fa-sun text-amber-400' : 'fa-moon text-indigo-400'}`}></i>
-                      <span>{theme === 'dark' ? (lang === 'ar' ? 'داكن' : 'Dark') : (lang === 'ar' ? 'فاتح' : 'Light')}</span>
-                    </button>
-                  </div>
-
-                  <p className="text-[11px] font-bold text-gray-400 mb-2.5 px-1">
-                    {lang === 'ar' ? 'اختر ثيم ألوان النظام بالكامل:' : 'Select full system color theme:'}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto custom-scrollbar p-0.5">
-                    {Object.values(COLOR_THEMES).map((ct) => {
-                      const isSelected = colorTheme === ct.id;
-                      return (
-                        <button
-                          key={ct.id}
-                          onClick={() => {
-                            setColorTheme(ct.id as ColorThemeId);
-                          }}
-                          className={`p-2.5 rounded-2xl text-left rtl:text-right transition-all flex flex-col justify-between border ${
-                            isSelected 
-                              ? 'bg-primary-50/70 dark:bg-primary-950/50 border-primary-500 shadow-md ring-2 ring-primary-500/20' 
-                              : 'bg-gray-50/80 dark:bg-gray-900/50 border-gray-100 dark:border-gray-700/80 hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between w-full mb-1.5">
-                            <div className="flex items-center space-x-1.5 rtl:space-x-reverse">
-                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] shadow-sm" style={{ backgroundColor: ct.primaryHex }}>
-                                <i className={`fas ${ct.icon}`}></i>
-                              </div>
-                              <div className="w-3 h-3 rounded-full border border-black/10 dark:border-white/20" style={{ backgroundColor: ct.bgPreviewHex }} title="لون خلفية النظام"></div>
-                            </div>
-                            {isSelected && (
-                              <i className="fas fa-check-circle text-primary-600 text-xs animate-in zoom-in"></i>
-                            )}
-                          </div>
-                          <span className="font-bold text-xs text-gray-800 dark:text-gray-100 truncate block">
-                            {lang === 'ar' ? ct.nameAr.split(' ')[0] : ct.nameEn}
-                          </span>
-                          <span className="text-[9px] text-gray-400 font-semibold truncate block mt-0.5">
-                            {lang === 'ar' ? ct.badgeAr : ct.badgeEn}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <button type="button" className={theme === 'dark' ? 'is-active' : ''} onClick={() => setTheme('dark')} title={lang === 'ar' ? 'الوضع الداكن' : 'Dark mode'} aria-label={lang === 'ar' ? 'الوضع الداكن' : 'Dark mode'} aria-pressed={theme === 'dark'}>
+                <i className="fas fa-moon"></i>
+              </button>
             </div>
-
-            <button onClick={toggleTheme} className="p-2 w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-gray-500" title="تبديل الإضاءة">
-              <i className={`fas ${theme === 'dark' ? 'fa-sun text-amber-400' : 'fa-moon text-indigo-400'}`}></i>
-            </button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar">
+        <main className="sg-accounting-content flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>

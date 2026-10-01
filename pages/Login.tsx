@@ -5,6 +5,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ const Login: React.FC = () => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState(false);
   const { authError, setAuthError, currentUser, userProfile, gateStatus, loading: authLoading } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
   // Redirect to dashboard if already fully authenticated and allowed
@@ -78,10 +80,10 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-10 relative">
+    <div className="sg-accounting-login min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 px-4 py-10 relative">
       
       {/* Top Bar Link to Landing Page */}
-      <div className="absolute top-6 right-6 left-6 flex items-center justify-between max-w-md mx-auto">
+      <div className="absolute top-6 right-6 left-6 flex items-center justify-between max-w-md mx-auto gap-3">
         <Link 
           to="/landing" 
           className="text-xs font-bold text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 flex items-center gap-2 transition-colors bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm"
@@ -89,12 +91,20 @@ const Login: React.FC = () => {
           <i className="fas fa-arrow-right text-xs"></i>
           <span>العودة للواجهة الرئيسية / Back to Landing</span>
         </Link>
+        <div className="sg-accounting-theme-switch shrink-0" role="group" aria-label="Choose theme">
+          <button type="button" className={theme === 'light' ? 'is-active' : ''} onClick={() => setTheme('light')} title="Light mode" aria-label="Light mode" aria-pressed={theme === 'light'}>
+            <i className="fas fa-sun"></i>
+          </button>
+          <button type="button" className={theme === 'dark' ? 'is-active' : ''} onClick={() => setTheme('dark')} title="Dark mode" aria-label="Dark mode" aria-pressed={theme === 'dark'}>
+            <i className="fas fa-moon"></i>
+          </button>
+        </div>
       </div>
 
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl transition-all mt-8">
-        <div className="w-16 h-16 bg-primary-600 rounded-2xl mx-auto flex items-center justify-center text-white text-2xl font-bold mb-6 shadow-lg shadow-primary-500/30">SG</div>
-        <h1 className="text-2xl font-bold text-center mb-2">SGCA Login</h1>
-        <p className="text-gray-500 dark:text-gray-400 text-center mb-8 text-sm">Revenue & CRM Management System</p>
+      <div className="sg-accounting-login-card max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl transition-all mt-8">
+        <img className="sg-accounting-login-logo" src="/saber-group-logo.png" alt="Saber Group" />
+        <h1 className="text-2xl font-bold text-center mb-2">Financial Operations</h1>
+        <p className="text-gray-500 dark:text-gray-400 text-center mb-8 text-sm">Accounting, revenue and enrollment control</p>
         
         {(authError || localError) && (
           <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 mb-6 rounded shadow-sm">
