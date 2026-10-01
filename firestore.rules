@@ -202,6 +202,11 @@ service cloud.firestore {
       allow write: if isPrivileged();
     }
 
+    match /catalog_categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isPrivileged();
+    }
+
     match /stats/{statId} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated();

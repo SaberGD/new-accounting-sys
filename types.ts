@@ -94,11 +94,19 @@ export interface PriceHistoryEntry {
   note?: string;
 }
 
+// Price-list grouping shown on the Catalog page (e.g. programs, full diplomas, workshops).
+export interface CatalogCategory {
+  id: string;
+  name: string;
+  order: number;
+}
+
 export interface Course {
   id: string;
   name: string;
   basePrice: number;
   active: boolean;
+  categoryId?: string | null;
   foreignPrices?: {
     [currency: string]: ForeignPrice;
   };
@@ -112,6 +120,7 @@ export interface Diploma {
   extraItems: string[];
   basePrice: number;
   active: boolean;
+  categoryId?: string | null;
   foreignPrices?: {
     [currency: string]: ForeignPrice;
   };
