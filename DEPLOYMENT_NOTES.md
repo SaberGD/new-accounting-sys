@@ -67,3 +67,11 @@ The API key is a Firebase Secret — never put it in the frontend or `.env`.
 Limits: each user gets 30 AI summaries per day (tracked in the `ai_usage`
 collection, written only by the function; the browser cannot read it).
 To change the model or provider, edit `AI_PROVIDERS` in `functions/index.js`.
+
+### Automatic deploy of the AI function
+
+The Hostinger workflow also deploys `aiSummarizeAnalysis` (that one function
+only — it does NOT touch Firestore rules or `adminResetPassword`) when the
+`FIREBASE_SERVICE_ACCOUNT` GitHub secret exists. It copies the
+`GROQ_API_KEY` GitHub secret into Firebase Secrets first. Without
+`FIREBASE_SERVICE_ACCOUNT` the step is skipped with a warning.
