@@ -52,17 +52,15 @@ new password.
 The "ملخص ذكي بالـ AI" button in the Dashboard performance analysis calls the
 `aiSummarizeAnalysis` Cloud Function. It sends only the aggregated analysis
 numbers (no student names or phone numbers) to a free LLM API:
-Groq (`openai/gpt-oss-120b`) first, NVIDIA NIM as a fallback.
+Groq (`openai/gpt-oss-120b`).
 
-The API keys are Firebase Secrets — never put them in the frontend or `.env`.
+The API key is a Firebase Secret — never put it in the frontend or `.env`.
 
 1. Get a key from https://console.groq.com/keys
-2. Get a key from https://build.nvidia.com (NVIDIA Developer Program, free)
-3. From the repo root:
+2. From the repo root:
    ```
    firebase use crm---acounting-sg
    firebase functions:secrets:set GROQ_API_KEY
-   firebase functions:secrets:set NVIDIA_API_KEY
    cd functions && npm install && cd .. && firebase deploy --only functions
    ```
 

@@ -78,14 +78,13 @@ export const adminResetPassword = onCall(async (request) => {
 
 // ---------------------------------------------------------------------------
 // AI summary of the Dashboard performance analysis.
-// Keys live in Firebase Secrets (never in the frontend bundle):
-//   firebase functions:secrets:set GROQ_API_KEY
-//   firebase functions:secrets:set NVIDIA_API_KEY
-// Groq is tried first; NVIDIA NIM is the fallback. Both are OpenAI-compatible.
+// The Groq key lives in Firebase Secrets (never in the frontend bundle); the
+// deploy workflow copies it there from the GROQ_API_KEY GitHub secret.
+// Providers are OpenAI-compatible and tried in order, so a fallback can be
+// added to AI_PROVIDERS later without touching the rest.
 // ---------------------------------------------------------------------------
 
 const GROQ_API_KEY = defineSecret('GROQ_API_KEY');
-const NVIDIA_API_KEY = defineSecret('NVIDIA_API_KEY');
 
 const AI_DAILY_LIMIT_PER_USER = 30;
 
@@ -95,12 +94,6 @@ const AI_PROVIDERS = [
     url: 'https://api.groq.com/openai/v1/chat/completions',
     model: 'openai/gpt-oss-120b',
     secret: GROQ_API_KEY,
-  },
-  {
-    name: 'nvidia',
-    url: 'https://integrate.api.nvidia.com/v1/chat/completions',
-    model: 'openai/gpt-oss-120b',
-    secret: NVIDIA_API_KEY,
   },
 ];
 
@@ -182,7 +175,7 @@ async function callProvider(provider, analysis) {
 }
 
 export const aiSummarizeAnalysis = onCall(
-  { secrets: [GROQ_API_KEY, NVIDIA_API_KEY], timeoutSeconds: 120 },
+  { secrets: [GROQ_API_KEY], timeoutSeconds: 120 },
   async (request) => {
     const caller = request.auth;
     if (!caller) {
