@@ -1,0 +1,70 @@
+name: Firestore rules
+
+# check  (default, also runs on pushes that touch the rules): downloads the
+#        rules currently LIVE on Firebase and prints a diff against
+#        firestore.rules in the repo. Read-only, changes nothing.
+# deploy (manual only): publishes firestore.rules to Firebase. Run it from the
+#        Actions tab only after reviewing the diff from a check run.
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - firestore.rules
+      - .github/workflows/firestore-rules.yml
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'check = show diff only, deploy = publish firestore.rules'
+        required: true
+        default: check
+        type: choice
+        options:
+          - check
+          - deploy
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: gcp
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          token_format: access_token
+
+      - name: Download live rules and diff against the repo
+        env:
+          TOKEN: ${{ steps.gcp.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          API=https://firebaserules.googleapis.com/v1
+          RELEASE=$(curl -sfS -H "Authorization: Bearer $TOKEN" \
+            "$API/projects/crm---acounting-sg/releases/cloud.firestore")
+          RULESET=$(echo "$RELEASE" | jq -r '.rulesetName')
+          echo "Live ruleset: $RULESET (updated $(echo "$RELEASE" | jq -r '.updateTime'))"
+          curl -sfS -H "Authorization: Bearer $TOKEN" "$API/$RULESET" \
+            | jq -r '.source.files[0].content' > live.rules
+          echo "----- diff: live (Firebase) -> repo (firestore.rules) -----"
+          if diff -u live.rules firestore.rules; then
+            echo "Live rules are IDENTICAL to firestore.rules."
+          fi
+
+      - name: Save live rules
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-firestore-rules
+          path: live.rules
+          if-no-files-found: ignore
+
+      - name: Deploy firestore.rules
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy'
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only firestore:rules --project crm---acounting-sg --non-interactive
