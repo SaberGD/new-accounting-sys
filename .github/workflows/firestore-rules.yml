@@ -56,6 +56,67 @@ jobs:
             echo "Live rules are IDENTICAL to firestore.rules."
           fi
 
+      # Read-only: who would still pass isActiveUser() under firestore.rules?
+      # Reads only email/role/isActive from users and allowed_users.
+      - name: Check which users keep access under firestore.rules
+        run: |
+          set -euo pipefail
+          TOKEN=$(gcloud auth print-access-token) python3 - <<'PY'
+          import json, os, urllib.request, urllib.parse
+
+          TOKEN = os.environ["TOKEN"]
+          BASE = "https://firestore.googleapis.com/v1/projects/crm---acounting-sg/databases/(default)/documents/"
+          OWNER_UID = "HsTxA3XEHFUPrabeWpl7jIv3bDl2"
+
+          def list_docs(collection, fields):
+              docs, token = [], None
+              while True:
+                  q = [("pageSize", "300")] + [("mask.fieldPaths", f) for f in fields]
+                  if token:
+                      q.append(("pageToken", token))
+                  req = urllib.request.Request(BASE + collection + "?" + urllib.parse.urlencode(q),
+                                               headers={"Authorization": "Bearer " + TOKEN})
+                  data = json.load(urllib.request.urlopen(req))
+                  docs += data.get("documents", [])
+                  token = data.get("nextPageToken")
+                  if not token:
+                      return docs
+
+          def val(doc, key):
+              v = doc.get("fields", {}).get(key, {})
+              return next(iter(v.values()), None) if v else None
+
+          def mask(email):
+              if not email or "@" not in email:
+                  return str(email)
+              name, domain = email.split("@", 1)
+              return name[:3] + "***@" + domain
+
+          allowed = {d["name"].rsplit("/", 1)[1].lower(): val(d, "isActive")
+                     for d in list_docs("allowed_users", ["isActive"])}
+          users = list_docs("users", ["email", "role", "isActive"])
+
+          ok, blocked = [], []
+          for d in users:
+              uid = d["name"].rsplit("/", 1)[1]
+              email = (val(d, "email") or "").lower()
+              role, active = val(d, "role"), val(d, "isActive")
+              reasons = []
+              if active is not True:
+                  reasons.append(f"users.isActive={active}")
+              if email in allowed and allowed[email] is not True:
+                  reasons.append(f"allowed_users.isActive={allowed[email]}")
+              tag = "  <-- OWNER (you)" if uid == OWNER_UID else ""
+              line = f"{mask(email):32} role={role}{tag}"
+              (blocked if reasons else ok).append(line + ("  [" + ", ".join(reasons) + "]" if reasons else ""))
+
+          print(f"Users: {len(users)} | keep access: {len(ok)} | would LOSE access: {len(blocked)}")
+          print("\n=== KEEP ACCESS ===")
+          print("\n".join(ok) or "(none)")
+          print("\n=== WOULD LOSE ACCESS ===")
+          print("\n".join(blocked) or "(none)")
+          PY
+
       - name: Save live rules
         if: always()
         uses: actions/upload-artifact@v4
