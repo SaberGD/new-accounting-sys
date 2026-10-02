@@ -106,10 +106,12 @@ jobs:
                   reasons.append(f"users.isActive={active}")
               if email in allowed and allowed[email] is not True:
                   reasons.append(f"allowed_users.isActive={allowed[email]}")
-              tag = "  <-- OWNER (you)" if uid == OWNER_UID else ""
+              tag = "  <-- OWNER (you)" if uid == OWNER_UID else f"  uid={uid[:6]}…"
               line = f"{mask(email):32} role={role}{tag}"
               (blocked if reasons else ok).append(line + ("  [" + ", ".join(reasons) + "]" if reasons else ""))
 
+          owner_found = any(d["name"].endswith("/" + OWNER_UID) for d in users)
+          print(f"Owner profile users/{OWNER_UID[:6]}…: {'FOUND' if owner_found else 'MISSING'}")
           print(f"Users: {len(users)} | keep access: {len(ok)} | would LOSE access: {len(blocked)}")
           print("\n=== KEEP ACCESS ===")
           print("\n".join(ok) or "(none)")
