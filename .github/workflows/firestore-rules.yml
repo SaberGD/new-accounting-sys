@@ -36,13 +36,14 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          token_format: access_token
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Download live rules and diff against the repo
-        env:
-          TOKEN: ${{ steps.gcp.outputs.access_token }}
         run: |
           set -euo pipefail
+          TOKEN=$(gcloud auth print-access-token)
           API=https://firebaserules.googleapis.com/v1
           RELEASE=$(curl -sfS -H "Authorization: Bearer $TOKEN" \
             "$API/projects/crm---acounting-sg/releases/cloud.firestore")
