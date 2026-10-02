@@ -6,7 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { getAggregatedStats, syncAggregatedStats, genericGet } from '../services/firestore';
 import { Payment, Booking, SalesStaff } from '../types';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, functions } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
 
 const Dashboard: React.FC = () => {
   const { t } = useTheme();
@@ -79,8 +80,46 @@ const Dashboard: React.FC = () => {
     }[];
   } | null>(null);
 
+  // AI summary of the analysis (Cloud Function: aiSummarizeAnalysis)
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleAiSummary = async () => {
+    if (!analysisResult) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      // Only send money figures to the AI if this user is allowed to see them.
+      const payload = canViewRevenue
+        ? analysisResult
+        : {
+            ...analysisResult,
+            totalCollected: undefined,
+            totalRefunded: undefined,
+            totalOutstanding: undefined,
+            netCollected: undefined,
+            salesBreakdown: analysisResult.salesBreakdown.map(({ collected, ...rest }) => rest),
+          };
+      const summarize = httpsCallable<{ analysis: unknown }, { summary: string }>(functions, 'aiSummarizeAnalysis');
+      const res = await summarize({ analysis: payload });
+      setAiSummary(res.data.summary);
+    } catch (err: any) {
+      console.error('AI summary failed:', err);
+      if (err?.code === 'functions/resource-exhausted') {
+        setAiError('وصلت للحد اليومي لطلبات الملخص الذكي. جرب بكرة.');
+      } else {
+        setAiError('تعذر إنشاء الملخص الذكي حالياً. حاول مرة أخرى بعد قليل.');
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleApplyAnalysis = async () => {
     setAnalysisLoading(true);
+    setAiSummary(null);
+    setAiError(null);
     try {
       let start = '';
       let end = '';
@@ -659,10 +698,52 @@ const Dashboard: React.FC = () => {
                 <i className="fas fa-calendar-check text-primary-600"></i>
                 <span>تقرير الفترة: {analysisResult.periodLabel}</span>
               </span>
-              <span className="text-[10px] text-gray-500 font-bold">
-                تاريخ النطاق: {analysisResult.startDate} إلى {analysisResult.endDate}
-              </span>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="text-[10px] text-gray-500 font-bold">
+                  تاريخ النطاق: {analysisResult.startDate} إلى {analysisResult.endDate}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAiSummary}
+                  disabled={aiLoading}
+                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white rounded-xl text-[11px] font-black transition-all shadow-lg shadow-violet-500/20 active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <i className={`fas ${aiLoading ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'}`}></i>
+                  <span>{aiLoading ? 'جاري كتابة الملخص...' : aiSummary ? 'إعادة الملخص الذكي' : 'ملخص ذكي بالـ AI'}</span>
+                </button>
+              </div>
             </div>
+
+            {/* AI Summary */}
+            {aiError && (
+              <div className="p-4 rounded-2xl border border-red-100 dark:border-red-900/40 bg-red-50/60 dark:bg-red-950/20 text-xs font-bold text-red-700 dark:text-red-300">
+                <i className="fas fa-triangle-exclamation ml-1"></i> {aiError}
+              </div>
+            )}
+            {aiSummary && (
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-violet-100 dark:border-violet-900/40 shadow-sm bg-gradient-to-b from-violet-50/40 dark:from-violet-950/10 to-transparent">
+                <h4 className="font-black text-xs uppercase tracking-wider text-violet-600 dark:text-violet-400 mb-3 flex items-center gap-2">
+                  <i className="fas fa-wand-magic-sparkles"></i>
+                  <span>الملخص الذكي</span>
+                </h4>
+                <div className="space-y-1.5 text-xs leading-relaxed text-gray-800 dark:text-gray-200">
+                  {aiSummary.split('\n').map((rawLine, idx) => {
+                    const line = rawLine.replace(/\*\*/g, '').trim();
+                    if (!line) return <div key={idx} className="h-1" />;
+                    if (line.startsWith('#')) {
+                      return <p key={idx} className="font-black text-gray-900 dark:text-white pt-2">{line.replace(/^#+\s*/, '')}</p>;
+                    }
+                    if (/^([-*•]|\d+[.)])\s+/.test(line)) {
+                      return <p key={idx} className="pr-3">• {line.replace(/^([-*•]|\d+[.)])\s+/, '')}</p>;
+                    }
+                    return <p key={idx}>{line}</p>;
+                  })}
+                </div>
+                <p className="mt-4 text-[10px] text-gray-400 font-bold">
+                  ملخص مُولّد بالذكاء الاصطناعي. الأرقام المعتمدة هي الموجودة في البطاقات أعلاه.
+                </p>
+              </div>
+            )}
 
             {/* Metric Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

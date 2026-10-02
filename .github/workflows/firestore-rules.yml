@@ -1,0 +1,131 @@
+name: Firestore rules
+
+# check  (default, also runs on pushes that touch the rules): downloads the
+#        rules currently LIVE on Firebase and prints a diff against
+#        firestore.rules in the repo. Read-only, changes nothing.
+# deploy (manual only): publishes firestore.rules to Firebase. Run it from the
+#        Actions tab only after reviewing the diff from a check run.
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - firestore.rules
+      - .github/workflows/firestore-rules.yml
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'check = show diff only, deploy = publish firestore.rules'
+        required: true
+        default: check
+        type: choice
+        options:
+          - check
+          - deploy
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: gcp
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Download live rules and diff against the repo
+        run: |
+          set -euo pipefail
+          TOKEN=$(gcloud auth print-access-token)
+          API=https://firebaserules.googleapis.com/v1
+          RELEASE=$(curl -sfS -H "Authorization: Bearer $TOKEN" \
+            "$API/projects/crm---acounting-sg/releases/cloud.firestore")
+          RULESET=$(echo "$RELEASE" | jq -r '.rulesetName')
+          echo "Live ruleset: $RULESET (updated $(echo "$RELEASE" | jq -r '.updateTime'))"
+          curl -sfS -H "Authorization: Bearer $TOKEN" "$API/$RULESET" \
+            | jq -r '.source.files[0].content' > live.rules
+          echo "----- diff: live (Firebase) -> repo (firestore.rules) -----"
+          if diff -u live.rules firestore.rules; then
+            echo "Live rules are IDENTICAL to firestore.rules."
+          fi
+
+      # Read-only: who would still pass isActiveUser() under firestore.rules?
+      # Reads only email/role/isActive from users and allowed_users.
+      - name: Check which users keep access under firestore.rules
+        run: |
+          set -euo pipefail
+          TOKEN=$(gcloud auth print-access-token) python3 - <<'PY'
+          import json, os, urllib.request, urllib.parse
+
+          TOKEN = os.environ["TOKEN"]
+          BASE = "https://firestore.googleapis.com/v1/projects/crm---acounting-sg/databases/(default)/documents/"
+
+          def list_docs(collection, fields):
+              docs, token = [], None
+              while True:
+                  q = [("pageSize", "300")] + [("mask.fieldPaths", f) for f in fields]
+                  if token:
+                      q.append(("pageToken", token))
+                  req = urllib.request.Request(BASE + collection + "?" + urllib.parse.urlencode(q),
+                                               headers={"Authorization": "Bearer " + TOKEN})
+                  data = json.load(urllib.request.urlopen(req))
+                  docs += data.get("documents", [])
+                  token = data.get("nextPageToken")
+                  if not token:
+                      return docs
+
+          def val(doc, key):
+              v = doc.get("fields", {}).get(key, {})
+              return next(iter(v.values()), None) if v else None
+
+          def mask(email):
+              if not email or "@" not in email:
+                  return str(email)
+              name, domain = email.split("@", 1)
+              return name[:3] + "***@" + domain
+
+          allowed = {d["name"].rsplit("/", 1)[1].lower(): val(d, "isActive")
+                     for d in list_docs("allowed_users", ["isActive"])}
+          users = list_docs("users", ["email", "role", "isActive"])
+
+          ok, blocked = [], []
+          for d in users:
+              uid = d["name"].rsplit("/", 1)[1]
+              email = (val(d, "email") or "").lower()
+              role, active = val(d, "role"), val(d, "isActive")
+              reasons = []
+              if active is not True:
+                  reasons.append(f"users.isActive={active}")
+              if email in allowed and allowed[email] is not True:
+                  reasons.append(f"allowed_users.isActive={allowed[email]}")
+              tag = f"  uid={uid[:6]}…"
+              line = f"{mask(email):32} role={role}{tag}"
+              (blocked if reasons else ok).append(line + ("  [" + ", ".join(reasons) + "]" if reasons else ""))
+
+          print(f"Users: {len(users)} | keep access: {len(ok)} | would LOSE access: {len(blocked)}")
+          print("\n=== KEEP ACCESS ===")
+          print("\n".join(ok) or "(none)")
+          print("\n=== WOULD LOSE ACCESS ===")
+          print("\n".join(blocked) or "(none)")
+          PY
+
+      - name: Save live rules
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-firestore-rules
+          path: live.rules
+          if-no-files-found: ignore
+
+      - name: Deploy firestore.rules
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy'
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only firestore:rules --project crm---acounting-sg --non-interactive

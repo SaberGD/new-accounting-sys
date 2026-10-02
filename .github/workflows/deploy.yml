@@ -47,3 +47,58 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: ./
+
+      # ---- AI summary Cloud Function (aiSummarizeAnalysis) ----
+      # Deploys ONLY the aiSummarizeAnalysis function, never Firestore rules.
+      # Runs after the site is live so a Firebase problem never blocks the
+      # website deploy. Auth uses a service account JSON key stored in the
+      # FIREBASE_SERVICE_ACCOUNT GitHub secret; skipped when it is missing.
+      - name: Check Firebase credentials
+        id: firebase_creds
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::warning::FIREBASE_SERVICE_ACCOUNT is missing; skipping AI function deploy."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install functions dependencies
+        if: steps.firebase_creds.outputs.enabled == 'true'
+        run: npm ci --prefix functions
+
+      - name: Authenticate to Google Cloud
+        if: steps.firebase_creds.outputs.enabled == 'true'
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/gcp-key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/gcp-key.json" >> "$GITHUB_ENV"
+
+      - name: Sync GROQ_API_KEY into Firebase Secrets
+        if: steps.firebase_creds.outputs.enabled == 'true'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          if [ -z "$GROQ_API_KEY" ]; then
+            echo "::error::GROQ_API_KEY GitHub secret is missing; the AI summary function cannot be deployed."
+            exit 1
+          fi
+          # Only add a new secret version when the value actually changed.
+          CURRENT=$(firebase functions:secrets:access GROQ_API_KEY --project crm---acounting-sg 2>/dev/null || true)
+          if [ "$CURRENT" != "$GROQ_API_KEY" ]; then
+            printf '%s' "$GROQ_API_KEY" | firebase functions:secrets:set GROQ_API_KEY \
+              --data-file=- --project crm---acounting-sg --non-interactive --force
+          else
+            echo "GROQ_API_KEY is already up to date."
+          fi
+
+      - name: Deploy AI summary Cloud Function
+        if: steps.firebase_creds.outputs.enabled == 'true'
+        run: firebase deploy --only functions:aiSummarizeAnalysis --project crm---acounting-sg --non-interactive --force
+
+      - name: Remove Google Cloud key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/gcp-key.json"
