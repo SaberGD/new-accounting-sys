@@ -224,3 +224,6 @@ export const aiSummarizeAnalysis = onCall(
     throw new HttpsError('unavailable', `All AI providers failed (${errors.join(', ')}).`);
   }
 );
+
+// Accounting -> Training portal access sync (see training-sync.js).
+export { syncBookingToTraining, reconcileTrainingAccess } from './training-sync.js';
