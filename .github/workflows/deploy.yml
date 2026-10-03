@@ -99,6 +99,38 @@ jobs:
         if: steps.firebase_creds.outputs.enabled == 'true'
         run: firebase deploy --only functions:aiSummarizeAnalysis --project crm---acounting-sg --non-interactive --force
 
+      # ---- Training access sync (syncBookingToTraining + reconcileTrainingAccess) ----
+      # Pushes booking status / 50% payment changes to the training portal.
+      # Independent of the AI function above, runs after the site is live, and
+      # is skipped (not failed) until the ACCOUNTING_SYNC_KEY GitHub secret
+      # exists, so it can never block the website deploy.
+      - name: Sync ACCOUNTING_SYNC_KEY into Firebase Secrets
+        id: training_sync
+        if: always() && steps.firebase_creds.outputs.enabled == 'true'
+        env:
+          ACCOUNTING_SYNC_KEY: ${{ secrets.ACCOUNTING_SYNC_KEY }}
+        run: |
+          if [ -z "$ACCOUNTING_SYNC_KEY" ]; then
+            echo "::warning::ACCOUNTING_SYNC_KEY is missing; skipping the training sync functions deploy."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CURRENT=$(firebase functions:secrets:access ACCOUNTING_SYNC_KEY --project crm---acounting-sg 2>/dev/null || true)
+          if [ "$CURRENT" != "$ACCOUNTING_SYNC_KEY" ]; then
+            printf '%s' "$ACCOUNTING_SYNC_KEY" | firebase functions:secrets:set ACCOUNTING_SYNC_KEY \
+              --data-file=- --project crm---acounting-sg --non-interactive --force
+          else
+            echo "ACCOUNTING_SYNC_KEY is already up to date."
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy training sync Cloud Functions
+        if: always() && steps.training_sync.outputs.enabled == 'true'
+        run: |
+          firebase deploy \
+            --only functions:syncBookingToTraining,functions:reconcileTrainingAccess \
+            --project crm---acounting-sg --non-interactive --force
+
       - name: Remove Google Cloud key
         if: always()
         run: rm -f "$RUNNER_TEMP/gcp-key.json"
