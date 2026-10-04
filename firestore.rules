@@ -98,6 +98,10 @@ service cloud.firestore {
       return isPrivileged() || isTrainingTeamLeader();
     }
 
+    function isSales() {
+      return isActiveUser() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'sales';
+    }
+
     function hasRequiredFields(fields) {
       return request.resource.data.keys().hasAll(fields);
     }
@@ -183,7 +187,12 @@ service cloud.firestore {
 
     match /installment_plans/{bookingId} {
       allow read: if isActiveUser();
-      allow write: if canManageBookings();
+      allow create, delete: if canManageBookings();
+      // Sales follow-up actions (sales reminder, notes, delay reason/new date,
+      // contacted, WhatsApp notified) all rewrite only the installments array;
+      // plan-level fields like deposit/planType stay locked for sales.
+      allow update: if canManageBookings() ||
+                    (isSales() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['installments']));
     }
 
     match /payments/{paymentId} {
