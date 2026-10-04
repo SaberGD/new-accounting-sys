@@ -50,6 +50,44 @@ export function bookingAccessState(bookingId, b) {
   };
 }
 
+/**
+ * Every format a phone may be stored in on the training side
+ * ("01xxxxxxxxx", "+201xxxxxxxxx", "201xxxxxxxxx", or "+<intl>").
+ */
+export function phoneVariants(raw) {
+  if (raw === null || raw === undefined) return [];
+  let d = String(raw)
+    .replace(/[٠-٩]/g, (c) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(c)))
+    .replace(/[۰-۹]/g, (c) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)))
+    .replace(/\D/g, '');
+  if (d.startsWith('00')) d = d.slice(2);
+  const eg = d.match(/^(?:20|0)?(1[0125]\d{8})$/);
+  if (eg) return ['0' + eg[1], '+20' + eg[1], '20' + eg[1]];
+  return d.length >= 8 ? ['+' + d, d] : [];
+}
+
+function customerPhones(c) {
+  if (!c) return [];
+  const raw = [c.phone, c.whatsapp, c.fullWhatsapp, c.countryCode && c.whatsapp ? `${c.countryCode}${c.whatsapp}` : null];
+  return [...new Set(raw.flatMap(phoneVariants))].slice(0, 12);
+}
+
+/**
+ * Lets the training side link students imported without a sourceBookingId:
+ * the customer's phone variants, the accounting group of the booking, and how
+ * many live bookings that customer has (to tell apart several courses).
+ */
+function linkInfo(b, customer, customerBookingCount) {
+  return {
+    customerId: b?.customerId || null,
+    groupId: b?.groupId || null,
+    phones: customerPhones(customer),
+    customerBookingCount,
+  };
+}
+
+const isLiveBooking = (b) => b && b.isDeleted !== true && String(b.status || 'ACTIVE').toUpperCase() !== 'DELETED';
+
 const sameState = (a, b) =>
   a.status === b.status && a.eligible === b.eligible && a.reason === b.reason &&
   a.totalPrice === b.totalPrice && a.paidTotal === b.paidTotal;
@@ -95,6 +133,22 @@ export const syncBookingToTraining = onDocumentWritten(
     if (sameState(prevState, nextState)) return;
 
     try {
+      if (after?.customerId) {
+        try {
+          const db = getFirestore();
+          const [customerSnap, customerBookings] = await Promise.all([
+            db.doc(`customers/${after.customerId}`).get(),
+            db.collection('bookings').where('customerId', '==', after.customerId).select('status', 'isDeleted').get(),
+          ]);
+          Object.assign(nextState, linkInfo(
+            after,
+            customerSnap.exists ? customerSnap.data() : null,
+            customerBookings.docs.filter((d) => isLiveBooking(d.data())).length,
+          ));
+        } catch (err) {
+          console.error('training sync: could not load link info', bookingId, err?.message || err);
+        }
+      }
       const result = await postToTraining({ mode: 'event', bookings: [nextState] });
       console.log('training sync', bookingId, JSON.stringify({ state: nextState, result }));
     } catch (err) {
@@ -117,9 +171,22 @@ export const reconcileTrainingAccess = onSchedule(
     const db = getFirestore();
     const snap = await db
       .collection('bookings')
-      .select('status', 'isDeleted', 'paymentSummary', 'pricing.finalPriceSnapshot', 'deactivatedReason')
+      .select('status', 'isDeleted', 'paymentSummary', 'pricing.finalPriceSnapshot', 'deactivatedReason', 'customerId', 'groupId')
       .get();
-    const states = snap.docs.map((d) => bookingAccessState(d.id, d.data()));
+    const customersSnap = await db.collection('customers').select('phone', 'whatsapp', 'fullWhatsapp', 'countryCode').get();
+    const customers = new Map(customersSnap.docs.map((d) => [d.id, d.data()]));
+    const liveCount = new Map();
+    snap.docs.forEach((d) => {
+      const b = d.data();
+      if (b.customerId && isLiveBooking(b)) liveCount.set(b.customerId, (liveCount.get(b.customerId) || 0) + 1);
+    });
+    const states = snap.docs.map((d) => {
+      const b = d.data();
+      return {
+        ...bookingAccessState(d.id, b),
+        ...linkInfo(b, customers.get(b.customerId), liveCount.get(b.customerId) || 0),
+      };
+    });
     const runId = `run_${new Date().toISOString().slice(0, 10)}`;
 
     let changed = 0;
