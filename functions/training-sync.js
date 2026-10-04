@@ -22,6 +22,7 @@ const TRAINING_SYNC_URL =
 const RECONCILE_CHUNK = 200;
 
 const round1 = (n) => Math.round(n * 10) / 10;
+const round2 = (n) => Math.round(n * 100) / 100;
 
 /**
  * The access-relevant state of a booking. Same 50% rule as the export in
@@ -29,7 +30,7 @@ const round1 = (n) => Math.round(n * 10) / 10;
  * because deactivateBooking zeroes `remaining`, which would read as 100%.
  */
 export function bookingAccessState(bookingId, b) {
-  if (!b) return { bookingId, status: 'DELETED', eligible: false, paidPercentage: null, reason: '' };
+  if (!b) return { bookingId, status: 'DELETED', eligible: false, paidPercentage: null, reason: '', totalPrice: null, paidTotal: null };
   const status = b.isDeleted === true ? 'DELETED' : String(b.status || 'ACTIVE').toUpperCase();
   const paid = Number(b.paymentSummary?.paidTotal) || 0;
   const remaining = Number(b.paymentSummary?.remaining) || 0;
@@ -43,11 +44,15 @@ export function bookingAccessState(bookingId, b) {
     eligible: status === 'ACTIVE' && paidPercentage >= 50,
     paidPercentage,
     reason: status === 'ACTIVE' ? '' : String(b.deactivatedReason || '').slice(0, 500),
+    // Shown to training staff as sensitive data (price / paid so far, EGP).
+    totalPrice: round2(Number(b.pricing?.finalPriceSnapshot) || total),
+    paidTotal: round2(paid),
   };
 }
 
 const sameState = (a, b) =>
-  a.status === b.status && a.eligible === b.eligible && a.reason === b.reason;
+  a.status === b.status && a.eligible === b.eligible && a.reason === b.reason &&
+  a.totalPrice === b.totalPrice && a.paidTotal === b.paidTotal;
 
 async function postToTraining(payload) {
   const body = JSON.stringify(payload);
