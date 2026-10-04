@@ -2,12 +2,23 @@
 
 ## Current status
 
-As checked on 2026-10-01, Firestore Point-in-Time Recovery and scheduled
-backups are not enabled for Firebase project `crm---acounting-sg`.
+Since 2026-10-04 Firebase project `crm---acounting-sg` (Firestore `(default)`, location
+`nam5`) has managed recovery enabled:
 
-The application provides a manual full backup from the Exports page. This is
-not uploaded automatically: the ZIP only exists in the browser's Downloads
-folder (or the folder selected by the browser).
+| Protection | Setting |
+| --- | --- |
+| Point-in-Time Recovery (PITR) | Enabled: any minute of the last 7 days |
+| Daily scheduled backup | Retained 14 days |
+| Weekly scheduled backup (Friday) | Retained 14 weeks |
+
+Not covered by these backups:
+
+- Firebase Authentication accounts: export separately with
+  `firebase auth:export users.json --project crm---acounting-sg`.
+- Source code and the website: in GitHub; redeploy with the Actions workflow.
+
+The manual ZIP backup on the Exports page (below) still works and is useful
+before risky changes.
 
 ## Create a manual backup
 
@@ -34,20 +45,57 @@ JSON inside the ZIP.
 
 ## Firebase managed recovery
 
-Firebase Console path:
+Run these in Cloud Shell as a project owner.
 
-`Firestore Database > Disaster recovery`
+### Check backups
 
-Direct project page:
+```bash
+gcloud firestore backups schedules list --database='(default)' --project=crm---acounting-sg
+gcloud firestore backups list --project=crm---acounting-sg
+```
+
+### Restore a scheduled backup
+
+A backup is restored into a **new** database; the live `(default)` database is
+not touched.
+
+```bash
+gcloud firestore databases restore \
+  --source-backup=projects/crm---acounting-sg/locations/nam5/backups/BACKUP_ID \
+  --destination-database=restored-YYYYMMDD \
+  --project=crm---acounting-sg
+```
+
+### Recover data from a point in time (last 7 days)
+
+Clone the database as it was at a given minute into a new database:
+
+```bash
+gcloud firestore databases clone \
+  --source-database='projects/crm---acounting-sg/databases/(default)' \
+  --snapshot-time='2026-10-04T18:00:00Z' \
+  --destination-database=pitr-YYYYMMDD \
+  --project=crm---acounting-sg
+```
+
+### After restoring
+
+1. Inspect the restored database in the Firebase Console and compare it with
+   the live data.
+2. Either copy back only the documents that were lost, or point the app at
+   the restored database (a code change in `firebase.ts` and the Cloud
+   Functions, then redeploy). Plan this cutover before doing it.
+3. Delete the temporary database when done to avoid storage cost.
+
+### Recommended extra protection
+
+Delete protection is currently disabled. Enable it so the database cannot be
+deleted by mistake:
+
+```bash
+gcloud firestore databases update --database='(default)' --delete-protection --project=crm---acounting-sg
+```
+
+Firebase Console path: `Firestore Database > Disaster recovery`
 
 `https://console.firebase.google.com/project/crm---acounting-sg/firestore/databases/-default-/disasterrecovery`
-
-Recommended production policy:
-
-- Enable Point-in-Time Recovery for short-window recovery.
-- Add a daily scheduled backup with suitable retention.
-- Add a longer-retention weekly backup.
-
-These features add Firebase storage cost. A managed backup is restored into a
-new Firestore database, so recovery must include validation and an application
-cutover plan.
