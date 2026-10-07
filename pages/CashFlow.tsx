@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { genericGet, genericGetQuery } from '../services/firestore';
 import { Payment, Booking, Refund, SalesStaff, Customer } from '../types';
-import { where } from 'firebase/firestore';
+import { where, documentId } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 
 const CashFlow: React.FC = () => {
@@ -61,11 +61,6 @@ const CashFlow: React.FC = () => {
         ...r.map(item => item.bookingId)
       ].filter(Boolean)));
 
-      const customerIds = Array.from(new Set([
-        ...p.map(item => item.customerId),
-        ...r.map(item => (item as any).customerId)
-      ].filter(Boolean)));
-
       let bList: Booking[] = [];
       let cList: Customer[] = [];
 
@@ -76,10 +71,17 @@ const CashFlow: React.FC = () => {
           chunks.push(bookingIds.slice(i, i + 30));
         }
         const bDocs = await Promise.all(
-          chunks.map(chunk => genericGetQuery<Booking>('bookings', [where('id', 'in', chunk)]))
+          chunks.map(chunk => genericGetQuery<Booking>('bookings', [where(documentId(), 'in', chunk)]))
         );
         bList = bDocs.flat();
       }
+
+      // Some payment paths don't store customerId, so also take it from the booking.
+      const customerIds = Array.from(new Set([
+        ...p.map(item => item.customerId),
+        ...r.map(item => (item as any).customerId),
+        ...bList.map(b => b.customerId)
+      ].filter(Boolean)));
 
       if (customerIds.length > 0) {
         const chunks = [];
@@ -87,7 +89,7 @@ const CashFlow: React.FC = () => {
           chunks.push(customerIds.slice(i, i + 30));
         }
         const cDocs = await Promise.all(
-          chunks.map(chunk => genericGetQuery<Customer>('customers', [where('id', 'in', chunk)]))
+          chunks.map(chunk => genericGetQuery<Customer>('customers', [where(documentId(), 'in', chunk)]))
         );
         cList = cDocs.flat();
       }
@@ -186,10 +188,15 @@ const CashFlow: React.FC = () => {
     };
   }, [payments, refunds, bookings, dateFilter, salesStaff]);
 
+  const findCustomer = (t: any) => {
+    const customerId = t.customerId || bookings.find(bk => bk.id === t.bookingId)?.customerId;
+    return customers.find(cust => cust.id === customerId);
+  };
+
   const handleExport = () => {
     const data = stats.transactions.map(t => {
       const b = bookings.find(bk => bk.id === (t as any).bookingId);
-      const c = customers.find(cust => cust.id === (t as any).customerId);
+      const c = findCustomer(t);
       return {
         'Date': (t as any).paymentDate || (t as any).refundDate,
         'Type': t.type,
@@ -301,7 +308,7 @@ const CashFlow: React.FC = () => {
                         </thead>
                         <tbody className="divide-y dark:divide-gray-700">
                             {stats.transactions.map((t, idx) => {
-                                const c = customers.find(cust => cust.id === (t as any).customerId);
+                                const c = findCustomer(t);
                                 return (
                                     <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-6 py-4 text-[11px] font-bold text-gray-500">{(t as any).paymentDate || (t as any).refundDate}</td>
