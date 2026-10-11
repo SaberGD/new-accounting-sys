@@ -130,6 +130,11 @@ jobs:
         if: steps.firebase_creds.outputs.enabled == 'true'
         run: firebase deploy --only functions:aiSummarizeAnalysis --project crm---acounting-sg --non-interactive --force
 
+      # Users page "Reset PW" button (admin resets a user's password to the default).
+      - name: Deploy admin password reset Cloud Function
+        if: always() && steps.firebase_creds.outputs.enabled == 'true'
+        run: firebase deploy --only functions:adminResetPassword --project crm---acounting-sg --non-interactive --force
+
       - name: Deploy training sync Cloud Functions
         if: always() && steps.training_sync.outputs.enabled == 'true'
         run: |
